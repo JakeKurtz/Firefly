@@ -1,0 +1,11 @@
+Rendering a 1000x1000 image in 8x8 blocks.
+1000 triangles w. grid
+took 115.564 seconds.
+
+Rendering a 1000x1000 image in 8x8 blocks.
+1000 triangles no grid
+took 65.511 seconds.
+
+Rendering a 1000x1000 image in 8x8 blocks.
+1000 triangles w. grid
+took 105.035 seconds.

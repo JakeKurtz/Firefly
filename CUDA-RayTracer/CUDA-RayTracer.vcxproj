@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{63904427-B4E6-4E0C-9AC5-11D68762DA18}</ProjectGuid>
+    <RootNamespace>CUDA_RayTracer</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.3.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>E:\repos\CUDA-RayTracer\middleware\assimp\include;E:\repos\CUDA-RayTracer\middleware\glfw\include;E:\repos\CUDA-RayTracer\middleware\glm;E:\repos\CUDA-RayTracer\middleware\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalUsingDirectories>E:\repos\CUDA-RayTracer\middleware\imgui;E:\repos\CUDA-RayTracer\middleware\glm;E:\repos\CUDA-RayTracer\middleware\stb;E:\repos\CUDA-RayTracer\middleware\glad;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\middleware\assimp\lib\x64;$(ProjectDir)..\middleware\glfw\lib\x64;E:\repos\CUDA-RayTracer\middleware\glfw\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Include>$(ProjectDir)..\middleware\imgui;$(ProjectDir)..\middleware\assimp\include;$(ProjectDir)..\middleware\glad\include;$(ProjectDir)..\middleware\glm;$(ProjectDir)..\middleware\stb;$(ProjectDir)..\middleware\glfw\include;$(ProjectDir)..\middleware\cub;%(Include)</Include>
+      <GenerateRelocatableDeviceCode>false</GenerateRelocatableDeviceCode>
+      <GPUDebugInfo>true</GPUDebugInfo>
+      <GenerateLineInfo>false</GenerateLineInfo>
+    </CudaCompile>
+    <CudaLink>
+      <AdditionalDependencies>$(ProjectDir)..\middleware\assimp\lib\x64;$(ProjectDir)..\middleware\glfw\lib\x64;$(ProjectDir)..\middleware\cub;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\repos\CUDA-RayTracer\middleware\glfw\lib\x64;E:\repos\CUDA-RayTracer\middleware\assimp\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </CudaLink>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>E:\repos\CUDA-RayTracer\middleware\assimp\include;E:\repos\CUDA-RayTracer\middleware\glfw\include;E:\repos\CUDA-RayTracer\middleware\glm;E:\repos\CUDA-RayTracer\middleware\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalUsingDirectories>E:\repos\CUDA-RayTracer\middleware\imgui;E:\repos\CUDA-RayTracer\middleware\glm;E:\repos\CUDA-RayTracer\middleware\stb;E:\repos\CUDA-RayTracer\middleware\glad;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\middleware\assimp\lib\x64;$(ProjectDir)..\middleware\glfw\lib\x64;E:\repos\CUDA-RayTracer\middleware\glfw\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Include>$(ProjectDir)..\middleware\imgui;$(ProjectDir)..\middleware\assimp\include;$(ProjectDir)..\middleware\glad\include;$(ProjectDir)..\middleware\glm;$(ProjectDir)..\middleware\stb;$(ProjectDir)..\middleware\glfw\include;$(ProjectDir)..\middleware\cub;%(Include)</Include>
+      <GenerateRelocatableDeviceCode>false</GenerateRelocatableDeviceCode>
+      <GPUDebugInfo>true</GPUDebugInfo>
+      <GenerateLineInfo>false</GenerateLineInfo>
+    </CudaCompile>
+    <CudaLink>
+      <AdditionalDependencies>$(ProjectDir)..\middleware\assimp\lib\x64;$(ProjectDir)..\middleware\glfw\lib\x64;$(ProjectDir)..\middleware\cub;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\repos\CUDA-RayTracer\middleware\glfw\lib\x64;E:\repos\CUDA-RayTracer\middleware\assimp\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </CudaLink>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">-g -G -std=c++17 -Xcompiler "/std:c++17" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">-g -G -std=c++17 -Xcompiler "/std:c++17" %(AdditionalOptions)</AdditionalOptions>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Acceleration\AABox.h" />
+    <ClInclude Include="Acceleration\BBox.h" />
+    <ClInclude Include="Acceleration\Bounds3.h" />
+    <ClInclude Include="Acceleration\BVHAccel.h" />
+    <ClInclude Include="BRDF\BRDF.h" />
+    <ClInclude Include="BRDF\Lambertian.h" />
+    <ClInclude Include="BRDF\MicrofacetSpecular.h" />
+    <ClInclude Include="Cameras\Camera.h" />
+    <ClInclude Include="Cameras\PinholeCamera.h" />
+    <ClInclude Include="Cameras\ThinLensCamera.h" />
+    <ClInclude Include="GeometricObjects\Box.h" />
+    <ClInclude Include="GeometricObjects\Compound\Compound.h" />
+    <ClInclude Include="GeometricObjects\Compound\Mesh.h" />
+    <ClInclude Include="GeometricObjects\Ellipse.h" />
+    <ClInclude Include="GeometricObjects\GeometricObj.h" />
+    <ClInclude Include="GeometricObjects\Compound\Model.h" />
+    <ClInclude Include="GeometricObjects\Torus.h" />
+    <ClInclude Include="GeometricObjects\Instance.h" />
+    <ClInclude Include="GeometricObjects\Rectangle.h" />
+    <ClInclude Include="GeometricObjects\Plane.h" />
+    <ClInclude Include="GeometricObjects\Sphere.h" />
+    <ClInclude Include="GeometricObjects\Triangle.h" />
+    <ClInclude Include="Lights\AmbientLight.h" />
+    <ClInclude Include="Lights\AmbientOccluder.h" />
+    <ClInclude Include="Lights\AreaLight.h" />
+    <ClInclude Include="Lights\Light.h" />
+    <ClInclude Include="Materials\CookTorrence.h" />
+    <ClInclude Include="Materials\Emissive.h" />
+    <ClInclude Include="Materials\Material.h" />
+    <ClInclude Include="Samplers\MultiJittered.h" />
+    <ClInclude Include="Samplers\Regular.h" />
+    <ClInclude Include="Samplers\Sampler.h" />
+    <ClInclude Include="Scene\Scene.h" />
+    <ClInclude Include="Scene\ViewPlane.h" />
+    <ClInclude Include="Tracers\PathTrace.h" />
+    <ClInclude Include="Tracers\Whitted.h" />
+    <ClInclude Include="Utilities\CudaHelpers.h" />
+    <ClInclude Include="Utilities\CudaList.h" />
+    <ClInclude Include="Utilities\Globals.h" />
+    <ClInclude Include="Utilities\MemoryArena.h" />
+    <ClInclude Include="Utilities\Math.h" />
+    <ClInclude Include="Utilities\Memory.h" />
+    <ClInclude Include="Utilities\Random.h" />
+    <ClInclude Include="Utilities\Ray.h" />
+    <ClInclude Include="Utilities\ShadeRec.h" />
+    <ClInclude Include="Tracers\Tracer.h" />
+    <ClInclude Include="Utilities\Spectrum.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Lights\PointLight.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\middleware\imgui;$(ProjectDir)..\middleware\assimp\include;$(ProjectDir)..\middleware\glad\include;$(ProjectDir)..\middleware\glm-0.9.8.2;$(ProjectDir)..\middleware\stb;$(ProjectDir)..\middleware\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\middleware\imgui;$(ProjectDir)..\middleware\assimp\include;$(ProjectDir)..\middleware\glad\include;$(ProjectDir)..\middleware\glm-0.9.8.2;$(ProjectDir)..\middleware\stb;$(ProjectDir)..\middleware\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="Utilities\Spectrum.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.3.targets" />
+  </ImportGroup>
+</Project>
