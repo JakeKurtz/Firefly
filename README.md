@@ -1,7 +1,7 @@
 # Firefly
 A cuda path tracer
 
-# Results
+# Results... so far
 
 ![alt text](https://github.com//JakeKurtz/Firefly/blob//master/images/Progress/holy_balls.png?raw=true)
 
