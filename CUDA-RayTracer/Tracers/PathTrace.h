@@ -54,7 +54,7 @@ public:
 			if (f == vec3(0.f) || pdf == 0.f)
 				break;
 
-			float n_dot_wi = glm::max(0.0, glm::dot(sr.normal, wi));//glm::abs(glm::dot(sr.normal, wi));
+			float n_dot_wi = glm::max(0.0, glm::dot(sr.normal, wi));
 			
 			beta *= f * n_dot_wi / pdf;
 

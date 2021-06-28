@@ -433,9 +433,9 @@ Triangle* loadModels(std::vector<Model*> models, std::vector<BVHPrimitiveInfo>& 
 
         //init_mesh_material << < 1, 1 >> > (d_material_ptr, vec3(0.94901, 0.94117, 0.90196), 0.2, 1.f, 1.f, 0.01f);
         if (nmb_triangles > 2)
-            init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(0.f), 0.2, 1.f, 1.f, 0.1f, vec3(1.00, 0.86, 0.57));
+            init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(1,0.2,0), 0.2, 1.f, 1.f, 0.5f, vec3(1.00, 0.86, 0.57));
         else
-            init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(1.f), 0.2, 1.f, 1.f, 1.f, vec3(0.24));
+            init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), 0.2, 1.f, 1.f, 0.01f, vec3(1.f));
         //init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(0.f, 0.6, 0.f), 0.2, 1.f, 1.f, 10.f);
         //init_mesh_material <<< 1, 1 >>> (d_material_ptr, mesh.Cd, mesh.Ka, mesh.Kd, mesh.Ks, mesh.Pr);
         checkCudaErrors(cudaGetLastError());

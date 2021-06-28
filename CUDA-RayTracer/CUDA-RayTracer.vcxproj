@@ -137,6 +137,7 @@
     <ClInclude Include="Samplers\Sampler.h" />
     <ClInclude Include="Scene\Scene.h" />
     <ClInclude Include="Scene\ViewPlane.h" />
+    <ClInclude Include="Tracers\BranchPathTrace.h" />
     <ClInclude Include="Tracers\PathTrace.h" />
     <ClInclude Include="Tracers\Whitted.h" />
     <ClInclude Include="Utilities\CudaHelpers.h" />

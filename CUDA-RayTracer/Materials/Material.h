@@ -13,7 +13,11 @@ class Material
 {
 public:
 	__device__ virtual glm::vec3 shade(ShadeRec& sr) { return glm::vec3(0.f); };
+	__device__ virtual glm::vec3 f_diffuse(ShadeRec& sr) { return glm::vec3(0.f); };
+	__device__ virtual glm::vec3 f_specular(ShadeRec& sr) { return glm::vec3(0.f); };
 	__device__ virtual glm::vec3 sample_f(ShadeRec& sr, const glm::dvec3& wo, glm::dvec3& wi, float& pdf) { return glm::vec3(0.f); };
+	__device__ virtual glm::vec3 sample_f_diffuse(ShadeRec& sr, const glm::dvec3& wo, glm::dvec3& wi, float& pdf) { return glm::vec3(0.f); };
+	__device__ virtual glm::vec3 sample_f_specular(ShadeRec& sr, const glm::dvec3& wo, glm::dvec3& wi, float& pdf) { return glm::vec3(0.f); };
 	__device__ virtual glm::vec3 get_fresnel_reflectance() { return fresnel_reflectance; };
 	__device__ virtual void set_fresnel_reflectance(glm::vec3 r) { fresnel_reflectance = r; };
 	__device__ virtual float get_ks(void)

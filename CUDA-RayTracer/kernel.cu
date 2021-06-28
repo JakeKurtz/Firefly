@@ -34,6 +34,7 @@
 
 #include "Tracers/Whitted.h"
 #include "Tracers/PathTrace.h"
+#include "Tracers/BranchPathTrace.h"
 
 #include "GeometricObjects/GeometricObj.h"
 #include "GeometricObjects/Instance.h"
@@ -76,7 +77,7 @@ __global__ void render_ThinLensCamera(vec3* fb, Scene** scene_ptr, ThinLensCamer
     float lens_radius = (*camera_ptr)->get_lens_radius();
     Sampler* sampler_ptr = (*camera_ptr)->get_sampler();
 
-    for (int n = 0; n < 1; n++) {
+    for (int n = 0; n < 256; n++) {
         sp = vp.sampler_ptr->sample_unit_square();
      
         pp.x = vp.s * (i - 0.5 * vp.hres + sp.x);
@@ -91,7 +92,7 @@ __global__ void render_ThinLensCamera(vec3* fb, Scene** scene_ptr, ThinLensCamer
         pixel_color += (*scene_ptr)->tracer_ptr->trace_ray(ray);
     }
 
-    pixel_color /= 1;
+    pixel_color /= 256;
     pixel_color *= (*camera_ptr)->exposure_time;
 
     pixel_color /= (pixel_color + 1.0f); // Hard coded Reinhard tone mapping
@@ -110,9 +111,9 @@ __global__ void create_ThinLensCamera(ThinLensCamera** camera_ptr)
         //(*camera_ptr) = new ThinLensCamera(vec3(-300, 200, 370), vec3(0, 15, 0));
         (*camera_ptr)->exposure_time = 1.f;
         (*camera_ptr)->set_view_distance(100);
-        (*camera_ptr)->set_zoom(90);
+        (*camera_ptr)->set_zoom(60);
         (*camera_ptr)->set_sampler(new MultiJittered(40000));
-        (*camera_ptr)->set_lens_radius(35.f);
+        (*camera_ptr)->set_lens_radius(15.f);
         (*camera_ptr)->set_focal_distance(900.f);
         (*camera_ptr)->update_camera_vectors();
     }
