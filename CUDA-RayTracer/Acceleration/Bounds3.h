@@ -1,69 +1,74 @@
 #pragma once
 
-#include <glm/glm.hpp>
-
 #include "../Utilities/Math.h"
 #include "../Utilities/Ray.h"
+#include "../Utilities/cutil_math.h"
 
-template <typename T> class Bounds3 {
+__device__ __inline__ int   min_min(int a, int b, int c) { int v; asm("vmin.s32.s32.s32.min %0, %1, %2, %3;" : "=r"(v) : "r"(a), "r"(b), "r"(c)); return v; }
+__device__ __inline__ int   min_max(int a, int b, int c) { int v; asm("vmin.s32.s32.s32.max %0, %1, %2, %3;" : "=r"(v) : "r"(a), "r"(b), "r"(c)); return v; }
+__device__ __inline__ int   max_min(int a, int b, int c) { int v; asm("vmax.s32.s32.s32.min %0, %1, %2, %3;" : "=r"(v) : "r"(a), "r"(b), "r"(c)); return v; }
+__device__ __inline__ int   max_max(int a, int b, int c) { int v; asm("vmax.s32.s32.s32.max %0, %1, %2, %3;" : "=r"(v) : "r"(a), "r"(b), "r"(c)); return v; }
+
+class Bounds3f {
 public:
-	__host__ __device__ Bounds3() {
-		T minNum = std::numeric_limits<T>::lowest();
-		T maxNum = std::numeric_limits<T>::max();
-		pMin = glm::tvec3<T>(maxNum);
-		pMax = glm::tvec3<T>(minNum);
+	__host__ __device__ Bounds3f() {
+		float minNum = std::numeric_limits<float>::lowest();
+		float maxNum = std::numeric_limits<float>::max();
+		pMin = make_float3(maxNum, maxNum, maxNum);
+		pMax = make_float3(minNum, minNum, minNum);
 	}
 
-	__host__ __device__ Bounds3(const glm::tvec3<T>& p) : pMin(p), pMax(p) {};
+	__host__ __device__ Bounds3f(const float3& p) : pMin(p), pMax(p) {};
 
-	__host__ __device__ Bounds3(const glm::tvec3<T>& p1, const glm::tvec3<T>& p2) :
-		pMin(glm::min(p1.x,p2.x), glm::min(p1.y, p2.y), glm::min(p1.z, p2.z)),
-		pMax(glm::max(p1.x,p2.x), glm::max(p1.y, p2.y), glm::max(p1.z, p2.z))
-	{};
+	__host__ __device__ Bounds3f(const float3& p1, const float3& p2)
+	{
+		pMin = make_float3(fminf(p1.x, p2.x), fminf(p1.y, p2.y), fminf(p1.z, p2.z));
+		pMax = make_float3(fmaxf(p1.x, p2.x), fmaxf(p1.y, p2.y), fmaxf(p1.z, p2.z));
+	};
 
-	__host__ __device__ const glm::tvec3<T>& operator[](int i) const 
+	__host__ __device__ const float3& __restrict__ operator[](int i) const
 	{
 		return (i == 0) ? pMin : pMax;
 	};
 
-	__host__ __device__ glm::tvec3<T>& operator[](int i) 
+	__host__ __device__ float3& __restrict__ operator[](int i)
 	{
 		return (i == 0) ? pMin : pMax;
 	};
 
-	__host__ __device__ bool operator==(const Bounds3& b) const
+	__host__ __device__ bool operator==(const Bounds3f& b) const
 	{
 		return b.pMin == pMin && b.pMax == pMax;
 	};
 
-	__host__ __device__ bool operator!=(const Bounds3& b) const
+	__host__ __device__ bool operator!=(const Bounds3f& b) const
 	{
 		return b.pMin != pMin || b.pMax != pMax;
 	};
 
-	__host__ __device__ glm::tvec3<T> corner(int corner) const {
-		return glm::tvec3<T>(
+	__host__ __device__ float3 corner(int corner) const {
+		return make_float3(
 			(*this)[corner & 1].x,
 			(*this)[(corner & 2) ? 1 : 0].y,
 			(*this)[(corner & 4) ? 1 : 0].z
 		);
 	};
 
-	__host__ __device__ glm::tvec3<T> diagonal() const { return pMax - pMin; };
+	__host__ __device__ float3 diagonal() const { return pMax - pMin; };
 
 	__host__ __device__ double surface_area() const
 	{
-		glm::tvec3<T> d = diagonal();
+		float3 d = diagonal();
 		return 2.0 * (d.x * d.y + d.x * d.z + d.y * d.z);
 	}
 
 	__host__ __device__ double volume() const {
-		glm::tvec3<T> d = diagonal();
+		float3 d = diagonal();
 		return d.x * d.y * d.z;
 	}
 
 	__host__ __device__ int maximum_extent() const {
-		glm::tvec3<T> d = diagonal();
+		float3 d = diagonal();
 		if (d.x > d.y && d.x > d.z)
 			return 0;
 		else if (d.y > d.z)
@@ -72,27 +77,28 @@ public:
 			return 2;
 	}
 
-	__host__ __device__ glm::tvec3<T> lerp(const glm::tvec3<T>& t) const {
-		return glm::tvec3<T>(lerp(t.x, pMin.x, pMax.x),
-					 lerp(t.y, pMin.y, pMax.y),
-					 lerp(t.z, pMin.z, pMax.z));
+	__host__ __device__ float3 lerp_(const float3& t) const {
+		return make_float3(lerp(t.x, pMin.x, pMax.x),
+						   lerp(t.y, pMin.y, pMax.y),
+						   lerp(t.z, pMin.z, pMax.z));
 	}
 
-	__host__ __device__ glm::tvec3<T> offset(const glm::tvec3<T>& p) const {
-		glm::tvec3<T> o = p - pMin;
+	__host__ __device__ float3 offset(const float3& p) const {
+		float3 o = p - pMin;
 		if (pMax.x > pMin.x) o.x /= pMax.x - pMin.x;
 		if (pMax.y > pMin.y) o.y /= pMax.y - pMin.y;
 		if (pMax.z > pMin.z) o.z /= pMax.z - pMin.z;
 		return o;
 	}
 
-	__host__ __device__ void bounding_sphere(glm::tvec3<T>* center, float* radius) const {
-		*center = (pMin + pMax) / 2.0;
-		*radius = Inside(*center, *this) ? distance(*center, pMax) : 0;
+	__host__ __device__ void bounding_sphere(float3* center, float* radius) const {
+		//*center = (pMin + pMax) / 2.0;
+		//*radius = inside(*center, *this) ? distance(*center, pMax) : 0;
 	}
 
-	__host__ __device__ bool hit(const Ray& ray) const
+	__device__ bool hit(const Ray& __restrict__ ray) const
 	{
+		/*
 		float tmin = (pMin.x - ray.o.x) / ray.d.x;
 		float tmax = (pMax.x - ray.o.x) / ray.d.x;
 
@@ -142,14 +148,29 @@ public:
 			tmax = tzmax;
 
 		return true;
+		*/
+		float tmin, tmax, tymin, tymax, tzmin, tzmax;
+
+		tmin = (pMin.x - ray.o.x) / ray.d.x;
+		tmax = (pMax.x - ray.o.x) / ray.d.x;
+		tymin = (pMin.y - ray.o.y) / ray.d.y;
+		tymax = (pMax.y - ray.o.y) / ray.d.y;
+		tzmin = (pMin.z - ray.o.z) / ray.d.z;
+		tzmax = (pMax.z - ray.o.z) / ray.d.z;
+
+		float tminbox = min_max(tmin, tmax, min_max(tymin, tymax, min_max(tzmin, tzmax, 0)));
+		float tmaxbox = max_min(tmin, tmax, max_min(tymin, tymax, max_min(tzmin, tzmax, K_HUGE)));
+
+		return (tminbox <= tmaxbox);
 	};
 
-	__host__ __device__ inline bool hit(const Ray& ray, const vec3& invDir, const int dirIsNeg[3]) const 
+	__device__ inline bool hit(const Ray& __restrict__ ray, const float3& __restrict__ invDir, const int dirIsNeg[3]) const
 	{
-		const Bounds3<float>& bounds = *this;
+		/*
+		const Bounds3<float>& __restrict__ bounds = *this;
 
 		float tmin = (bounds[dirIsNeg[0]].x - ray.o.x) * invDir.x;
-		float tmax = (bounds[1 - dirIsNeg[0]].x - ray.o.x) * invDir.x;
+		float tmax = (bounds[1 - dirIsNeg[0]].x - ray.o.x)* invDir.x;
 
 		if (tmin > tmax) {
 			float temp = tmin;
@@ -166,8 +187,10 @@ public:
 			tymax = temp;
 		}
 
-		if ((tmin > tymax) || (tymin > tmax))
+		if ((tmin > tymax) || (tymin > tmax)) 
+		{
 			return false;
+		}
 
 		if (tymin > tmin)
 			tmin = tymin;
@@ -184,20 +207,36 @@ public:
 			tzmax = temp;
 		}
 
-		if ((tmin > tzmax) || (tzmin > tmax))
+		if ((tmin > tzmax) || (tzmin > tmax)) 
+		{
 			return false;
+		}
 
 		if (tzmin > tmin)
 			tmin = tzmin;
 
 		if (tzmax < tmax)
 			tmax = tzmax;
-
+		
 		return true;
+		*/
+		float tmin, tmax, tymin, tymax, tzmin, tzmax;
+
+		tmin = ((*this)[dirIsNeg[0]].x - ray.o.x) * invDir.x;
+		tmax = ((*this)[1 - dirIsNeg[0]].x - ray.o.x) * invDir.x;
+		tymin = ((*this)[dirIsNeg[1]].y - ray.o.y) * invDir.y;
+		tymax = ((*this)[1 - dirIsNeg[1]].y - ray.o.y) * invDir.y;
+		tzmin = ((*this)[dirIsNeg[2]].z - ray.o.z) * invDir.z;
+		tzmax = ((*this)[1 - dirIsNeg[2]].z - ray.o.z) * invDir.z;
+
+		float tminbox = min_max(tmin, tmax, min_max(tymin, tymax, min_max(tzmin, tzmax, 0)));
+		float tmaxbox = max_min(tmin, tmax, max_min(tymin, tymax, max_min(tzmin, tzmax, K_HUGE)));
+
+		return (tminbox <= tmaxbox);
 	}
 
-	glm::tvec3<T>   pMin, pMax;
+	float3 pMin, pMax;
 };
 
-typedef Bounds3<float> Bounds3f;
-typedef Bounds3<int>   Bounds3i;
+//typedef Bounds3<float> Bounds3f;
+//typedef Bounds3<int>   Bounds3i;

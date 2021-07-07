@@ -9,29 +9,29 @@ class Plane : public GeometricObj
 public:
 	__device__ Plane(void)
 	{
-		point = glm::dvec3(0.f);
-		normal = glm::dvec3(0.f, 1.f, 0.f);
+		point = make_float3(0,0,0);
+		normal = make_float3(0.f, 1.f, 0.f);
 		inv_area = 1.f;
 	};
 
-	__device__ Plane(const glm::dvec3 p, const glm::dvec3& n)
+	__device__ Plane(const float3 p, const float3& n)
 	{
 		point = p;
 		normal = n;
 		inv_area = 1.f;
 	};
 
-	__device__ void set_normal(const glm::dvec3 n)
+	__device__ void set_normal(const float3 n)
 	{
 		normal = n;
 	};
 
-	__device__ void set_point(const glm::dvec3 p)
+	__device__ void set_point(const float3 p)
 	{
 		point = p;
 	};
 
-	__device__ glm::dvec3 get_point(void)
+	__device__ float3 get_point(void)
 	{
 		return point;
 	};
@@ -41,9 +41,9 @@ public:
 		return (new Plane(*this));
 	}
 
-	__device__ virtual bool hit(const Ray& ray, double& tmin, ShadeRec& sr) const
+	__device__ virtual bool hit(const Ray& ray, float& tmin, ShadeRec& sr) const
 	{
-		double t = dot((point - ray.o), normal) / dot(ray.d, normal);
+		float t = dot((point - ray.o), normal) / dot(ray.d, normal);
 
 		if (t > K_EPSILON) {
 			tmin = t;
@@ -56,7 +56,7 @@ public:
 	};
 
 	__device__ virtual bool hit(const Ray& ray) const {
-		double t = dot((point - ray.o), normal) / dot(ray.d, normal);
+		float t = dot((point - ray.o), normal) / dot(ray.d, normal);
 
 		if (t > K_EPSILON) {
 			return (true);
@@ -65,12 +65,12 @@ public:
 			return (false);
 	}
 
-	__device__ virtual bool shadow_hit(const Ray& ray, double& tmin) const
+	__device__ virtual bool shadow_hit(const Ray& ray, float& tmin) const
 	{
 		if (!shadows)
 			return (false);
 
-		double t = dot((point - ray.o), normal) / dot(ray.d, normal);
+		float t = dot((point - ray.o), normal) / dot(ray.d, normal);
 
 		if (t > K_EPSILON) {
 			tmin = t;
@@ -82,19 +82,19 @@ public:
 
 	__device__ virtual void set_sampler(Sampler* sampler) {};
 
-	__device__ virtual glm::vec3 sample(void)
+	__device__ virtual float3 sample(void)
 	{
-		return glm::vec3(1);
+		return make_float3(1,1,1);
 	};
 
-	__device__ virtual glm::dvec3 get_normal(const glm::dvec3 p)
+	__device__ virtual float3 get_normal(const float3 p)
 	{
 		return normal;
 	};
 
 private:
-	glm::dvec3 point;					// point through which the plane passes
-	glm::dvec3 normal;					// normal to the plane
+	float3 point;					// point through which the plane passes
+	float3 normal;					// normal to the plane
 };
 
 #endif // _RAYTRACER_GEOMETRICOBJECTS_PLANE_H_

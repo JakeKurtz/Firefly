@@ -1,18 +1,18 @@
 #pragma once
 
-#include <glm/glm.hpp>
 #include <crt/host_defines.h>
 
 class Ray {
 public:
-	glm::dvec3 o;
-	glm::dvec3 d;
+	float3 o;
+	float3 d;
 
-	__device__ Ray(void) : 
-		o(0.f),
-		d(0.f)
-	{};
-	__device__ Ray(const glm::dvec3& origin, const glm::dvec3& dir) {
+	__device__ Ray(void)
+	{
+		o = make_float3(0,0,0);
+		d = make_float3(0,0,0);
+	};
+	__device__ Ray(const float3& origin, const float3& dir) {
 		o = origin;
 		d = dir;
 	};

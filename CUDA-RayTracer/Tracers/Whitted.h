@@ -19,7 +19,7 @@ public:
 
 	__device__ virtual ~Whitted(void) {};
 
-	__device__ virtual glm::vec3 trace_ray(Ray& ray) const {
+	__device__ virtual float3 trace_ray(Ray& ray) const {
 		ShadeRec sr(scene_ptr->hit_objs(ray));
 
 		if (sr.hit_an_obj) {

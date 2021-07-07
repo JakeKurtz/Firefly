@@ -33,11 +33,11 @@ public:
 		return objects.size();
 	};
 
-	__device__ virtual bool hit(const Ray& ray, double& tmin, ShadeRec& sr) const
+	__device__ virtual bool hit(const Ray& ray, float& tmin, ShadeRec& sr) const
 	{
-		double			t;
-		glm::dvec3		normal;
-		glm::dvec3		local_hit_point;
+		float			t;
+		float3			normal;
+		float3			local_hit_point;
 		bool			hit = false;
 		tmin =			K_HUGE;
 		int 			num_objects = objects.size();
@@ -63,9 +63,9 @@ public:
 
 	__device__ virtual bool hit(const Ray& ray) const
 	{
-		double			t;
-		glm::dvec3		normal;
-		glm::dvec3		local_hit_point;
+		float			t;
+		float3			normal;
+		float3			local_hit_point;
 		bool			hit = false;
 		int 			num_objects = objects.size();
 
@@ -76,11 +76,11 @@ public:
 		return (hit);
 	};
 
-	__device__ virtual bool shadow_hit(const Ray& ray, double& tmin) const
+	__device__ virtual bool shadow_hit(const Ray& ray, float& tmin) const
 	{
-		double			t;
-		glm::dvec3		normal;
-		glm::dvec3		local_hit_point;
+		float			t;
+		float3			normal;
+		float3			local_hit_point;
 		bool			hit = false;
 		tmin =			K_HUGE;
 		int 			num_objects = objects.size();

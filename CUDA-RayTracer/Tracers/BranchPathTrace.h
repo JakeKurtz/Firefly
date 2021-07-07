@@ -18,10 +18,10 @@ public:
 
 	__device__ virtual ~BranchPathTrace(void) {};
 
-	__device__ virtual glm::vec3 trace_ray(Ray& ray) const {
+	__device__ virtual float3 trace_ray(Ray& ray) const {
 
-		vec3 L = vec3(0);
-		vec3 beta = vec3(1.f);
+		float3 L = make_float3(0,0,0);
+		float3 beta = make_float3(1,1,1);
 		int maxDepth = 3;
 		Ray ray_cpy = Ray(ray);
 
@@ -31,7 +31,7 @@ public:
 		// Diffuse path
 		for (int i = 0; i < diff_samples; i++) {
 			ray = ray_cpy;
-			beta = vec3(1.f);
+			beta = make_float3(1,1,1);
 			for (int bounces = 0;; ++bounces)
 			{
 				// Intersect ray with scene
@@ -54,22 +54,22 @@ public:
 				else break;
 
 				// Sample BRDF to get new path direction
-				dvec3 wo = -sr.ray.d, wi;
+				float3 wo = -sr.ray.d, wi;
 				float pdf;
 
-				vec3 f = glm::max(vec3(0.0), sr.material_ptr->sample_f_diffuse(sr, wo, wi, pdf));
+				float3 f = fmaxf(make_float3(0,0,0), sr.material_ptr->sample_f_diffuse(sr, wo, wi, pdf));
 
-				if (f == vec3(0.f) || pdf == 0.f)
+				if (f == make_float3(0,0,0) || pdf == 0.f)
 					break;
 
-				float n_dot_wi = glm::max(0.0, glm::dot(sr.normal, wi));
+				float n_dot_wi = fmaxf(0.0, dot(sr.normal, wi));
 
 				beta *= f * n_dot_wi / pdf;
 
 				ray = Ray(sr.local_hit_point, wi);
 
 				if (bounces > 3) {
-					float q = glm::max((float).05, 1 - beta.y);
+					float q = fmaxf((float).05, 1 - beta.y);
 					if (random() < q)
 						break;
 					beta /= 1 - q;
@@ -81,7 +81,7 @@ public:
 		// Specular path
 		for (int i = 0; i < spec_samples; i++) {
 			ray = ray_cpy;
-			beta = vec3(1.f);
+			beta = make_float3(1,1,1);
 			for (int bounces = 0;; ++bounces)
 			{
 				// Intersect ray with scene
@@ -104,22 +104,22 @@ public:
 				else break;
 
 				// Sample BRDF to get new path direction
-				dvec3 wo = -sr.ray.d, wi;
+				float3 wo = -sr.ray.d, wi;
 				float pdf;
 
-				vec3 f = glm::max(vec3(0.0), sr.material_ptr->sample_f_specular(sr, wo, wi, pdf));
+				float3 f = fmaxf(make_float3(0,0,0), sr.material_ptr->sample_f_specular(sr, wo, wi, pdf));
 
-				if (f == vec3(0.f) || pdf == 0.f)
+				if (f == make_float3(0,0,0) || pdf == 0.f)
 					break;
 
-				float n_dot_wi = glm::max(0.0, glm::dot(sr.normal, wi));
+				float n_dot_wi = fmaxf(0.0, dot(sr.normal, wi));
 
 				beta *= f * n_dot_wi / pdf;
 
 				ray = Ray(sr.local_hit_point, wi);
 
 				if (bounces > 3) {
-					float q = glm::max((float).05, 1 - beta.y);
+					float q = fmaxf((float).05, 1 - beta.y);
 					if (random() < q)
 						break;
 					beta /= 1 - q;

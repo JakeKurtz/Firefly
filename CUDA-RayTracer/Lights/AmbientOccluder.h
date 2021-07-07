@@ -7,34 +7,34 @@ class AmbientOccluder : public Light {
 public:
 
 	__device__ AmbientOccluder(void) :
-		Light(),
-		min_amount(0.f)
+		Light()
 	{
 		ls = 2.f;
-		color = glm::vec3(1.f);
+		min_amount = make_float3(0,0,0);
+		color = make_float3(1,1,1);
 		enable_shadows(true);
 	}
 
-	__device__ virtual vec3 get_direction(ShadeRec& sr)
+	__device__ virtual float3 get_direction(ShadeRec& sr)
 	{
+		float3 dir = sr.normal;
+		float3 right = normalize(cross(dir, make_float3(0.0072, 1.f, 0.0034)));
+		float3 up = normalize(cross(right, dir));
 
-		glm::dvec3 dir = sr.normal;
-		glm::dvec3 right = normalize(cross(dir, glm::dvec3(0.0072, 1.f, 0.0034)));
-		glm::dvec3 up = normalize(cross(right, dir));
-
-		glm::dvec3 sp = sampler_ptr->sample_hemisphere();
+		//float3 sp = sampler_ptr->sample_hemisphere();
+		float3 sp = CosineSampleHemisphere();
 		return (sp.x * up + sp.y * right + sp.z * dir);
 	};
 
 	__device__ virtual bool in_shadow(const Ray& ray, const ShadeRec& sr) const
 	{
-		double t = K_HUGE;
+		float t = K_HUGE;
 		int num_objs = sr.s.objects.size();
 
 		return shadow_hit(ray, t, sr.s.bvh, sr.s.objects);
 	};
 
-	__device__ virtual bool visible(const Ray& ray, double& tmin, ShadeRec& sr) const
+	__device__ virtual bool visible(const Ray& ray, float& tmin, ShadeRec& sr) const
 	{
 		return false;
 	}
@@ -44,7 +44,7 @@ public:
 		return false;
 	}
 
-	__device__ virtual glm::vec3 L(ShadeRec& sr)
+	__device__ virtual float3 L(ShadeRec& sr)
 	{
 		Ray shadow_ray;
 		shadow_ray.o = sr.local_hit_point;
@@ -59,8 +59,8 @@ public:
 	__device__ void set_min_amount(const float _ls);
 
 private:
-	glm::dvec3	world_up = glm::vec3(0.0f, 1.0f, 0.0f);
-	glm::vec3	min_amount;
+	float3	world_up = make_float3(0.0f, 1.0f, 0.0f);
+	float3	min_amount;
 };
 
 #endif // _RAYTRACER_LIGHTS_AMBIENTOCCLUDER_H_

@@ -18,7 +18,7 @@ public:
 		return (new Box(*this));
 	};
 
-	__device__ virtual bool hit(const Ray& ray, double& tmin, ShadeRec& sr) const
+	__device__ virtual bool hit(const Ray& ray, float& tmin, ShadeRec& sr) const
 	{
 
 	};
@@ -28,7 +28,7 @@ public:
 
 	};
 
-	__device__ virtual bool shadow_hit(const Ray& ray, double& tmin) const
+	__device__ virtual bool shadow_hit(const Ray& ray, float& tmin) const
 	{
 
 	};
@@ -44,19 +44,19 @@ public:
 		sampler_ptr->generate_samples();
 	};
 
-	__device__ virtual vec3 sample(void)
+	__device__ virtual float3 sample(void)
 	{
 
 	};
 
-	__device__ virtual glm::dvec3 get_normal(const glm::dvec3 p)
+	__device__ virtual float3 get_normal(const float3 p)
 	{
 		return normal;
 	};
 
 private:
-	glm::dvec3	c, u, v;
-	glm::dvec3	normal;
+	float3	c, u, v;
+	float3	normal;
 	Sampler*	sampler_ptr;
 };
 #endif // _RAYTRACER_GEOMETRICOBJECTS_BOX_H_

@@ -31,7 +31,7 @@ struct BVHPrimitiveInfo
 	{}
 	size_t primitiveNumber;
 	Bounds3f bounds;
-	glm::vec3 centroid;
+	float3 centroid;
 };
 
 struct BVHBuildNode
@@ -70,14 +70,14 @@ struct LinearBVHNode {
 	uint8_t pad[1];        // ensure 32 byte total size
 };
 
-__device__ void Intersect(const Ray& ray, ShadeRec& sr, const LinearBVHNode* nodes, const CudaList<GeometricObj*> primitives) 
+__device__ void Intersect(const Ray& __restrict__ ray, ShadeRec& sr, const LinearBVHNode* __restrict__ nodes, const CudaList<GeometricObj*> primitives)
 {
-	double		t;
-	glm::dvec3	normal;
-	glm::vec3	local_hit_point;
-	double		tmin = K_HUGE;
+	float		t;
+	float3		normal;
+	float3		local_hit_point;
+	float		tmin = K_HUGE;
 
-	vec3 invDir(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
+	float3 invDir = make_float3(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
 	int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z < 0 };
 	
 	// Follow ray through BVH nodes to find primitive intersections //
@@ -138,11 +138,11 @@ __device__ void Intersect(const Ray& ray, ShadeRec& sr, const LinearBVHNode* nod
 	}
 }
 
-__device__ bool shadow_hit(const Ray& ray, double& tmin, const LinearBVHNode* nodes, const CudaList<GeometricObj*> primitives)
+__device__ bool shadow_hit(const Ray& __restrict__ ray, float& tmin, const LinearBVHNode* __restrict__ nodes, const CudaList<GeometricObj*> primitives)
 {
-	double		t;
+	float		t;
 	
-	vec3 invDir(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
+	float3 invDir = make_float3(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
 	int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z < 0 };
 	
 	// Follow ray through BVH nodes to find primitive intersections //
@@ -245,7 +245,20 @@ public:
 
 			// Partition primitives into two sets and build children //
 			int mid = (start + end) / 2;
-			if (centroidBounds.pMax[dim] == centroidBounds.pMin[dim]) {
+
+			float con;
+			switch (dim) {
+				case 0:
+					con = centroidBounds.pMax.x == centroidBounds.pMin.x;
+					break;
+				case 1:
+					con = centroidBounds.pMax.y == centroidBounds.pMin.y;
+					break;
+				default:
+					con = centroidBounds.pMax.z == centroidBounds.pMin.z;
+			}
+			if (con) {
+			//if (centroidBounds.pMax[dim] == centroidBounds.pMin[dim]) {
 				// Create leaf BVHBuildNode //
 				int firstPrimOffset = orderedPrims.size();
 				for (int i = start; i < end; ++i) {
@@ -259,12 +272,30 @@ public:
 				switch (splitMethod) {
 				case SplitMethod::Middle: {
 					// Partition primitives through node’s midpoint /
-					float pmid = 
-						(centroidBounds.pMin[dim] + centroidBounds.pMax[dim]) / 2;
+					float pmid;
+					switch (dim) {
+						case 0:
+							pmid = (centroidBounds.pMin.x + centroidBounds.pMax.x) / 2;
+							break;
+						case 1:
+							pmid = (centroidBounds.pMin.y + centroidBounds.pMax.y) / 2;
+							break;
+						default:
+							pmid = (centroidBounds.pMin.z + centroidBounds.pMax.z) / 2;
+					}
+					//float pmid = (centroidBounds.pMin[dim] + centroidBounds.pMax[dim]) / 2;
 					BVHPrimitiveInfo* midPtr = std::partition(
 						&primitiveInfo[start], &primitiveInfo[end - 1] + 1,
 						[dim, pmid](const BVHPrimitiveInfo& pi) {
-							return pi.centroid[dim] < pmid;
+							switch (dim) {
+								case 0:
+									return pi.centroid.x < pmid;
+								case 1:
+									return pi.centroid.y < pmid;
+								default:
+									return pi.centroid.z < pmid;
+							}
+							//return pi.centroid[dim] < pmid;
 						});
 					mid = midPtr - &primitiveInfo[0];
 					if (mid != start && mid != end) break;
@@ -276,7 +307,15 @@ public:
 										&primitiveInfo[end - 1] + 1,
 										[dim](const BVHPrimitiveInfo& a, 
 											const BVHPrimitiveInfo& b) {
-										return a.centroid[dim] < b.centroid[dim];
+										switch (dim) {
+											case 0:
+												return a.centroid.x < b.centroid.x;
+											case 1:
+												return a.centroid.y < b.centroid.y;
+											default:
+												return a.centroid.z < b.centroid.z;
+										}
+										//return a.centroid[dim] < b.centroid[dim];
 									});
 
 					break;
@@ -292,7 +331,15 @@ public:
 							&primitiveInfo[mid],
 							&primitiveInfo[end - 1] + 1,
 							[dim](const BVHPrimitiveInfo& a, const BVHPrimitiveInfo& b) {
-							return a.centroid[dim] < b.centroid[dim];
+							switch (dim) {
+								case 0:
+									return a.centroid.x < b.centroid.x;
+								case 1:
+									return a.centroid.y < b.centroid.y;
+								default:
+									return a.centroid.z < b.centroid.z;
+							}
+							//return a.centroid[dim] < b.centroid[dim];
 						});
 					}
 					else {
@@ -306,7 +353,18 @@ public:
 
 						// Initialize BucketInfo for SAH partition buckets //
 							for (int i = start; i < end; ++i) {
-								int b = nBuckets * centroidBounds.offset(primitiveInfo[i].centroid)[dim];
+								//int b = nBuckets * centroidBounds.offset(primitiveInfo[i].centroid)[dim];
+								int b;
+								switch (dim) {
+									case 0:
+										b = nBuckets * centroidBounds.offset(primitiveInfo[i].centroid).x;
+										break;
+									case 1:
+										b = nBuckets * centroidBounds.offset(primitiveInfo[i].centroid).y;
+										break;
+									default:
+										b = nBuckets * centroidBounds.offset(primitiveInfo[i].centroid).z;
+								}
 								if (b == nBuckets) b = nBuckets - 1;
 								buckets[b].count++;
 								buckets[b].bounds = Union(buckets[b].bounds, primitiveInfo[i].bounds);
@@ -341,10 +399,22 @@ public:
 						// Either create leaf or split primitives at selected SAH bucket //
 						float leafCost = nPrimitives;
 						if (nPrimitives > maxPrimsInNode || minCost < leafCost) {
-							BVHPrimitiveInfo* pmid = std::partition(&primitiveInfo[start],
+							BVHPrimitiveInfo* pmid = std::partition(
+								&primitiveInfo[start], 
 								&primitiveInfo[end - 1] + 1,
 								[=](const BVHPrimitiveInfo& pi) {
-									int b = nBuckets * centroidBounds.offset(pi.centroid)[dim];
+									//int b = nBuckets * centroidBounds.offset(pi.centroid)[dim];
+									int b;
+									switch (dim) {
+										case 0:
+											b = nBuckets * centroidBounds.offset(pi.centroid).x;
+											break;
+										case 1:
+											b = nBuckets * centroidBounds.offset(pi.centroid).y;
+											break;
+										default:
+											b = nBuckets * centroidBounds.offset(pi.centroid).z;
+									}
 									if (b == nBuckets) b = nBuckets - 1;
 									return b <= minCostSplitBucket;
 								});

@@ -14,3 +14,8 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
         exit(99);
     }
 }
+
+__device__ int threadID(void) 
+{
+    return blockIdx.x* blockDim.x* blockDim.y + threadIdx.y * blockDim.x + threadIdx.x;
+}

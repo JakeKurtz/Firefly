@@ -8,7 +8,7 @@ class PinholeCamera : public Camera
 public:
 	Camera::Camera;
 
-	__host__ __device__ vec3 ray_direction(const vec2& p) const {
+	__host__ __device__ float3 ray_direction(const float2& p) const {
 		return normalize(p.x * right + p.y * up - d * direction);
 	};
 

@@ -1,0 +1,67 @@
+curand test:
+	image size:		1024x1024
+	bounces:		5
+	samples:		1
+	model: 			sphere_test
+	speed: 			760,719.675 ray/sec
+
+wang_hash test:
+	image size:		1024x1024
+	bounces:		5
+	samples:		1
+	model: 			sphere_test
+	speed: 			910,696.643 ray/sec
+
+curand test:
+	image size:		1024x1024
+	bounces:		5
+	samples:		1
+	model: 			dragon_test
+	speed: 			ray/sec
+
+wang_hash test:
+	image size:		1024x1024
+	bounces:		5
+	samples:		1
+	model: 			dragon_test
+	speed: 			ray/sec
+	time:			13.455 sec
+
+traversing the BVH:
+	image size:		1024x1024
+	bounces:		5
+	samples:		1
+	model: 			sphere_test
+	time:			1.239 sec
+	speed: 			ray/sec
+
+traversing the BVH:
+	image size:		1024x1024
+	bounces:		5
+	samples:		1
+	model: 			dragon_test
+	time:			2.679 sec
+	speed: 			 ray/sec
+
+
+using glm math library:
+	image size:		2048x2048
+	bounces:		1
+	samples:		1
+	model: 			dragon_test
+	time:			6.47 seconds (4 tests)
+
+
+using built in math library:
+	image size:		2048x2048
+	bounces:		1
+	samples:		1
+	model: 			dragon_test
+	time:			4.803 sec
+
+direct lighting only and no shadows:
+	image size:		1024x1024
+	bounces:		1
+	samples:		256
+	model: 			sphere_test
+	time:			 sec

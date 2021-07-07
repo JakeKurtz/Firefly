@@ -12,30 +12,30 @@
 class Material
 {
 public:
-	__device__ virtual glm::vec3 shade(ShadeRec& sr) { return glm::vec3(0.f); };
-	__device__ virtual glm::vec3 f_diffuse(ShadeRec& sr) { return glm::vec3(0.f); };
-	__device__ virtual glm::vec3 f_specular(ShadeRec& sr) { return glm::vec3(0.f); };
-	__device__ virtual glm::vec3 sample_f(ShadeRec& sr, const glm::dvec3& wo, glm::dvec3& wi, float& pdf) { return glm::vec3(0.f); };
-	__device__ virtual glm::vec3 sample_f_diffuse(ShadeRec& sr, const glm::dvec3& wo, glm::dvec3& wi, float& pdf) { return glm::vec3(0.f); };
-	__device__ virtual glm::vec3 sample_f_specular(ShadeRec& sr, const glm::dvec3& wo, glm::dvec3& wi, float& pdf) { return glm::vec3(0.f); };
-	__device__ virtual glm::vec3 get_fresnel_reflectance() { return fresnel_reflectance; };
-	__device__ virtual void set_fresnel_reflectance(glm::vec3 r) { fresnel_reflectance = r; };
+	__device__ virtual float3 shade(ShadeRec& sr) { return make_float3(0,0,0); };
+	__device__ virtual float3 f_diffuse(ShadeRec& sr) { return make_float3(0,0,0); };
+	__device__ virtual float3 f_specular(ShadeRec& sr) { return make_float3(0,0,0); };
+	__device__ virtual float3 sample_f(ShadeRec& sr, const float3& wo, float3& wi, float& pdf) { return make_float3(0,0,0); };
+	__device__ virtual float3 sample_f_diffuse(ShadeRec& sr, const float3& wo, float3& wi, float& pdf) { return make_float3(0,0,0); };
+	__device__ virtual float3 sample_f_specular(ShadeRec& sr, const float3& wo, float3& wi, float& pdf) { return make_float3(0,0,0); };
+	__device__ virtual float3 get_fresnel_reflectance() { return fresnel_reflectance; };
+	__device__ virtual void set_fresnel_reflectance(float3 r) { fresnel_reflectance = r; };
 	__device__ virtual float get_ks(void)
 	{
 		return 1.f;
 	};
-	__device__ virtual vec3 get_cd(void)
+	__device__ virtual float3 get_cd(void)
 	{
-		return vec3(1.f);
+		return make_float3(1,1,1);
 	};
 	__device__ virtual bool is_emissive(void)
 	{
 		return (false);
 	};
-	__device__ virtual glm::dvec3 sample(glm::vec3 N) { return vec3(1); };
+	__device__ virtual float3 sample(float3 N) { return make_float3(1,1,1); };
 	__device__ virtual ~Material() {};
 private:
-	glm::vec3 fresnel_reflectance = glm::vec3(1.f);
+	float3 fresnel_reflectance = make_float3(1,1,1);
 };
 
 #endif // _RAYTRACER_MATERIALS_MATERIAL_H_

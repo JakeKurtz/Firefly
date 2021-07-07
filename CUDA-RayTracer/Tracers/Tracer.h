@@ -21,8 +21,8 @@ public:
 			scene_ptr = NULL;
 	};
 
-	__device__ virtual glm::vec3 trace_ray(Ray& ray) const {
-		return glm::vec3(0.f);
+	__device__ virtual float3 trace_ray(Ray& ray) const {
+		return make_float3(0,0,0);
 	};
 
 protected:

@@ -82,8 +82,8 @@ private:
             CookTorrence** d_material_ptr;
             checkCudaErrors(cudaMalloc((void**)&d_material_ptr, sizeof(CookTorrence*)));
 
-            init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(0.94901, 0.94117, 0.90196), 0.2, 1.f, 1.f, 0.01f);
-            //init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(0.f, 0.6, 0.f), 0.2, 1.f, 1.f, 0.01);
+            init_mesh_material <<< 1, 1 >>> (d_material_ptr, float3(0.94901, 0.94117, 0.90196), 0.2, 1.f, 1.f, 0.01f);
+            //init_mesh_material <<< 1, 1 >>> (d_material_ptr, float3(0.f, 0.6, 0.f), 0.2, 1.f, 1.f, 0.01);
             checkCudaErrors(cudaGetLastError());
             checkCudaErrors(cudaDeviceSynchronize());
 
@@ -148,8 +148,8 @@ private:
             CookTorrence** d_material_ptr;
             checkCudaErrors(cudaMalloc((void**)&d_material_ptr, sizeof(CookTorrence*)));
 
-            //init_mesh_material << < 1, 1 >> > (d_material_ptr, vec3(0.94901, 0.94117, 0.90196), 0.2, 1.f, 1.f, 0.01f);
-            //init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(0.f, 0.6, 0.f), 0.2, 1.f, 1.f, 0.01);
+            //init_mesh_material << < 1, 1 >> > (d_material_ptr, float3(0.94901, 0.94117, 0.90196), 0.2, 1.f, 1.f, 0.01f);
+            //init_mesh_material <<< 1, 1 >>> (d_material_ptr, float3(0.f, 0.6, 0.f), 0.2, 1.f, 1.f, 0.01);
             //init_mesh_material <<< 1, 1 >>> (d_material_ptr, mesh.Cd, mesh.Ka, mesh.Kd, mesh.Ks, mesh.Pr);
             checkCudaErrors(cudaGetLastError());
             checkCudaErrors(cudaDeviceSynchronize());
@@ -196,7 +196,7 @@ private:
         for (unsigned int i = 0; i < mesh->mNumVertices; i++)
         {
             Vertex vertex;
-            glm::vec3 vector;
+            float3 vector;
 
             // positions
             vector.x = mesh->mVertices[i].x;
@@ -215,7 +215,7 @@ private:
             // texture coordinates
             if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
             {
-                glm::vec2 vec;
+                float2 vec;
                 vec.x = mesh->mTextureCoords[0][i].x;
                 vec.y = mesh->mTextureCoords[0][i].y;
                 vertex.TexCoords = vec;
@@ -231,7 +231,7 @@ private:
                 vertex.Bitangent = vector;
             }
             else
-                vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+                vertex.TexCoords = make_float2(0.0f, 0.0f);
 
             vertices.push_back(vertex);
         }
@@ -338,14 +338,14 @@ __host__ std::vector<Bounds3f> h_process_mesh(std::vector<Vertex> vertices, std:
         Vertex v1 = vertices[iv1];
         Vertex v2 = vertices[iv2];
 
-        Bounds3f bounds = bounds = Union(Bounds3f((vec3)v0.Position, (vec3)v1.Position), (vec3)v2.Position);
-
+        Bounds3f bounds = Union(Bounds3f(v0.Position, v1.Position), v2.Position);
+        //printf("%f\t%f\t%f\n%f\t%f\t%f\n\n", bounds.pMax.x, bounds.pMax.y, bounds.pMax.z, bounds.pMin.x, bounds.pMin.y, bounds.pMin.z);
         triangle_info.push_back({ id++, bounds });
     }
     return primitive_bounds;
 }
 
-__global__ void init_mesh_material(CookTorrence** material_ptr, vec3 Cd, float Ka, float Kd, float Ks, float Pr, vec3 Fr)
+__global__ void init_mesh_material(CookTorrence** material_ptr, float3 Cd, float Ka, float Kd, float Ks, float Pr, float3 Fr)
 {
     (*material_ptr) = new CookTorrence();
     (*material_ptr)->set_cd(Cd);
@@ -431,12 +431,13 @@ Triangle* loadModels(std::vector<Model*> models, std::vector<BVHPrimitiveInfo>& 
         CookTorrence** d_material_ptr;
         checkCudaErrors(cudaMalloc((void**)&d_material_ptr, sizeof(CookTorrence*)));
 
-        //init_mesh_material << < 1, 1 >> > (d_material_ptr, vec3(0.94901, 0.94117, 0.90196), 0.2, 1.f, 1.f, 0.01f);
+        //init_mesh_material << < 1, 1 >> > (d_material_ptr, float3(0.94901, 0.94117, 0.90196), 0.2, 1.f, 1.f, 0.01f);
         if (nmb_triangles > 2)
-            init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(1,0.2,0), 0.2, 1.f, 1.f, 0.5f, vec3(1.00, 0.86, 0.57));
+            init_mesh_material <<< 1, 1 >>> (d_material_ptr, make_float3(1,0.2,0), 0.2, 1.f, 1.f, 0.5f, make_float3(1.00, 0.86, 0.57));
         else
-            init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), 0.2, 1.f, 1.f, 0.01f, vec3(1.f));
-        //init_mesh_material <<< 1, 1 >>> (d_material_ptr, vec3(0.f, 0.6, 0.f), 0.2, 1.f, 1.f, 10.f);
+            init_mesh_material <<< 1, 1 >>> (d_material_ptr, make_float3(0,0,0.7), 0.2, 1.f, 1.f, 0.001f, make_float3(1.f));
+            //init_mesh_material <<< 1, 1 >>> (d_material_ptr, float3(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), 0.2, 1.f, 1.f, 0.01f, float3(1.f));
+        //init_mesh_material <<< 1, 1 >>> (d_material_ptr, float3(0.f, 0.6, 0.f), 0.2, 1.f, 1.f, 10.f);
         //init_mesh_material <<< 1, 1 >>> (d_material_ptr, mesh.Cd, mesh.Ka, mesh.Kd, mesh.Ks, mesh.Pr);
         checkCudaErrors(cudaGetLastError());
         checkCudaErrors(cudaDeviceSynchronize());

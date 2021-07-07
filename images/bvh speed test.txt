@@ -1,0 +1,5 @@
+ppf -> primitive per leaf
+
+47.128 seconds at 1ppf 
+
+47.795 seconds at 50ppf

@@ -11,13 +11,13 @@ public:
     __device__ Torus(void) :
         major(1.0), minor(0.5)
     {
-        inv_area = 1.0 / (double)(2.0*M_PI*major)*(2.0*M_PI*minor);
+        inv_area = 1.0 / (float)(2.0*M_PI*major)*(2.0*M_PI*minor);
     };
 
-    __device__ Torus(const double _major, const double _minor) :
+    __device__ Torus(const float _major, const float _minor) :
         major(_major), minor(_minor)
     {
-        inv_area = 1.0 / (double)(2.0 * M_PI * major) * (2.0 * M_PI * minor);
+        inv_area = 1.0 / (float)(2.0 * M_PI * major) * (2.0 * M_PI * minor);
     };
 
     __device__ Torus* clone(void) const
@@ -25,20 +25,20 @@ public:
         return (new Torus(*this));
     }
 
-    __device__ virtual bool hit(const Ray& ray, double& tmin, ShadeRec& sr) const
+    __device__ virtual bool hit(const Ray& ray, float& tmin, ShadeRec& sr) const
     {
-        double x1 = ray.o.x; double y1 = ray.o.y; double z1 = ray.o.z;
-        double d1 = ray.d.x; double d2 = ray.d.y; double d3 = ray.d.z;
+        float x1 = ray.o.x; float y1 = ray.o.y; float z1 = ray.o.z;
+        float d1 = ray.d.x; float d2 = ray.d.y; float d3 = ray.d.z;
 
-        double coeffs[5];	// coefficient array for the quartic equation
-        double roots[4];	// solution array for the quartic equation
+        float coeffs[5];	// coefficient array for the quartic equation
+        float roots[4];	// solution array for the quartic equation
 
         // define the coefficients of the quartic equation
 
-        double sum_d_sqrd = d1 * d1 + d2 * d2 + d3 * d3;
-        double e = x1 * x1 + y1 * y1 + z1 * z1 - major * major - minor * minor;
-        double f = x1 * d1 + y1 * d2 + z1 * d3;
-        double four_a_sqrd = 4.0 * major * major;
+        float sum_d_sqrd = d1 * d1 + d2 * d2 + d3 * d3;
+        float e = x1 * x1 + y1 * y1 + z1 * z1 - major * major - minor * minor;
+        float f = x1 * d1 + y1 * d2 + z1 * d3;
+        float four_a_sqrd = 4.0 * major * major;
 
         coeffs[0] = e * e - four_a_sqrd * (minor * minor - y1 * y1); 	// constant term
         coeffs[1] = 4.0 * f * e + 2.0 * four_a_sqrd * y1 * d2;
@@ -51,7 +51,7 @@ public:
         int num_real_roots = solve_quartic(coeffs, roots);
 
         bool	intersected = false;
-        double 	t = K_HUGE;
+        float 	t = K_HUGE;
 
         if (num_real_roots == 0)  // ray misses the torus
             return(false);
@@ -78,18 +78,18 @@ public:
 
     __device__ virtual bool hit(const Ray& ray) const
     {
-        double x1 = ray.o.x; double y1 = ray.o.y; double z1 = ray.o.z;
-        double d1 = ray.d.x; double d2 = ray.d.y; double d3 = ray.d.z;
+        float x1 = ray.o.x; float y1 = ray.o.y; float z1 = ray.o.z;
+        float d1 = ray.d.x; float d2 = ray.d.y; float d3 = ray.d.z;
 
-        double coeffs[5];	// coefficient array for the quartic equation
-        double roots[4];	// solution array for the quartic equation
+        float coeffs[5];	// coefficient array for the quartic equation
+        float roots[4];	// solution array for the quartic equation
 
         // define the coefficients of the quartic equation
 
-        double sum_d_sqrd = d1 * d1 + d2 * d2 + d3 * d3;
-        double e = x1 * x1 + y1 * y1 + z1 * z1 - major * major - minor * minor;
-        double f = x1 * d1 + y1 * d2 + z1 * d3;
-        double four_a_sqrd = 4.0 * major * major;
+        float sum_d_sqrd = d1 * d1 + d2 * d2 + d3 * d3;
+        float e = x1 * x1 + y1 * y1 + z1 * z1 - major * major - minor * minor;
+        float f = x1 * d1 + y1 * d2 + z1 * d3;
+        float four_a_sqrd = 4.0 * major * major;
 
         coeffs[0] = e * e - four_a_sqrd * (minor * minor - y1 * y1); 	// constant term
         coeffs[1] = 4.0 * f * e + 2.0 * four_a_sqrd * y1 * d2;
@@ -102,7 +102,7 @@ public:
         int num_real_roots = solve_quartic(coeffs, roots);
 
         bool	intersected = false;
-        double 	t = K_HUGE;
+        float 	t = K_HUGE;
 
         if (num_real_roots == 0)  // ray misses the torus
             return(false);
@@ -123,20 +123,20 @@ public:
         return (true);
     };
 
-    __device__ virtual bool shadow_hit(const Ray& ray, double& tmin) const
+    __device__ virtual bool shadow_hit(const Ray& ray, float& tmin) const
     {
-        double x1 = ray.o.x; double y1 = ray.o.y; double z1 = ray.o.z;
-        double d1 = ray.d.x; double d2 = ray.d.y; double d3 = ray.d.z;
+        float x1 = ray.o.x; float y1 = ray.o.y; float z1 = ray.o.z;
+        float d1 = ray.d.x; float d2 = ray.d.y; float d3 = ray.d.z;
 
-        double coeffs[5];	// coefficient array for the quartic equation
-        double roots[4];	// solution array for the quartic equation
+        float coeffs[5];	// coefficient array for the quartic equation
+        float roots[4];	// solution array for the quartic equation
 
         // define the coefficients of the quartic equation
 
-        double sum_d_sqrd = d1 * d1 + d2 * d2 + d3 * d3;
-        double e = x1 * x1 + y1 * y1 + z1 * z1 - major * major - minor * minor;
-        double f = x1 * d1 + y1 * d2 + z1 * d3;
-        double four_a_sqrd = 4.0 * major * major;
+        float sum_d_sqrd = d1 * d1 + d2 * d2 + d3 * d3;
+        float e = x1 * x1 + y1 * y1 + z1 * z1 - major * major - minor * minor;
+        float f = x1 * d1 + y1 * d2 + z1 * d3;
+        float four_a_sqrd = 4.0 * major * major;
 
         coeffs[0] = e * e - four_a_sqrd * (minor * minor - y1 * y1); 	// constant term
         coeffs[1] = 4.0 * f * e + 2.0 * four_a_sqrd * y1 * d2;
@@ -149,7 +149,7 @@ public:
         int num_real_roots = solve_quartic(coeffs, roots);
 
         bool	intersected = false;
-        double 	t = K_HUGE;
+        float 	t = K_HUGE;
 
         if (num_real_roots == 0)  // ray misses the torus
             return(false);
@@ -183,25 +183,25 @@ public:
         sampler_ptr->generate_samples();
     };
 
-    __device__ virtual glm::vec3 sample(void)
+    __device__ virtual float3 sample(void)
     {
 
     };
 
-    __device__ virtual glm::dvec3 get_normal(const glm::dvec3 p)
+    __device__ virtual float3 get_normal(const float3 p)
     {
         return compute_normal(p);
     };
 
-    __device__ virtual glm::dvec3 compute_normal(const glm::dvec3 p) const
+    __device__ virtual float3 compute_normal(const float3 p) const
     {
-        glm::dvec3 normal;
-        double param_squared = major * major + minor * minor;
+        float3 normal;
+        float param_squared = major * major + minor * minor;
 
-        double x = p.x;
-        double y = p.y;
-        double z = p.z;
-        double sum_squared = x * x + y * y + z * z;
+        float x = p.x;
+        float y = p.y;
+        float z = p.z;
+        float sum_squared = x * x + y * y + z * z;
 
         normal.x = 4.0 * x * (sum_squared - param_squared);
         normal.y = 4.0 * y * (sum_squared - param_squared + 2.0 * major * major);
@@ -212,7 +212,7 @@ public:
     };
 
 private:
-    double      major, minor;
+    float      major, minor;
     Sampler*    sampler_ptr;
 };
 

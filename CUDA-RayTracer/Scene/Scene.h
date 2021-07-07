@@ -8,10 +8,7 @@
 #include "../Acceleration/BVHAccel.h"
 
 #include "../Lights/Light.h"
-
 #include "../GeometricObjects/GeometricObj.h"
-
-#include <glm/glm.hpp>
 
 using namespace std;
 
@@ -29,12 +26,13 @@ class Scene
 {
 public:
 	ViewPlane					vp;
+	curandState_t*				states;
 	Camera*						camera_ptr;
-	glm::vec3					background_color;
+	float3						background_color;
 	Light*						ambient_ptr;
 	CudaList<Light*>			lights;
 	CudaList<GeometricObj*>		objects;
-	LinearBVHNode*				bvh;
+	LinearBVHNode* __restrict__	bvh;
 	Tracer*						tracer_ptr = nullptr;
 
 	__device__ Scene(void);
@@ -49,7 +47,7 @@ public:
 };
 
 __device__ Scene::Scene(void) :
-	background_color(glm::vec3(0.f))
+	background_color(make_float3(0,0,0))
 {}
 
 __device__ void Scene::add_obj(GeometricObj* obj_ptr) {
@@ -67,7 +65,7 @@ inline __device__ ShadeRec Scene::hit_objs(const Ray& ray)
 	/*
 	double		t;
 	glm::dvec3	normal;
-	glm::vec3	local_hit_point;
+	float3	local_hit_point;
 	double		tmin = K_HUGE;
 	
 	int	num_objs = objects.size();

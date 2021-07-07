@@ -3,7 +3,7 @@
 #include <curand_kernel.h>
 #include <cuda_runtime.h>
 
-#include <glm/glm.hpp>
+#include "../Utilities/cutil_math.h"
 
 __constant__ const int DEFAULT_SET_SIZE = 181;
 
@@ -60,9 +60,9 @@ inline float gamma(int n) {
     return (n * MachineEpsilon) / (1 - n * MachineEpsilon);
 }
 
-__device__ glm::vec3 fresnel(glm::vec3 f0, glm::vec3 h, glm::vec3 wo)
+__device__ float3 fresnel(float3 f0, float3 h, float3 wo)
 {
-    return f0 + (glm::vec3(1.f) - f0) * pow(glm::max(1.f - glm::max(0.f, dot(h, wo)), 0.f), 5.f);
+    return f0 + (make_float3(1,1,1) - f0) * pow(fmaxf(1.f - fmaxf(0.f, dot(h, wo)), 0.f), 5.f);
 };
 
 template <typename T> __host__ __device__ T lerp(const T a, const T b, const T w)
@@ -75,9 +75,9 @@ template <typename T> __host__ __device__ T remap(const T x, const T low1, const
     return low2 + (x - low1) * (high2 - low2) / (high1 - low1);
 }
 
-__host__ __device__ int solve_quadric(double c[3], double s[2])
+__host__ __device__ int solve_quadric(float c[3], float s[2])
 {
-    double p, q, D;
+    float p, q, D;
 
     /* normal form: x^2 + px + q = 0 */
 
@@ -91,7 +91,7 @@ __host__ __device__ int solve_quadric(double c[3], double s[2])
         return 1;
     }
     else if (D > 0) {
-        double sqrt_D = sqrt(D);
+        float sqrt_D = sqrt(D);
 
         s[0] = sqrt_D - p;
         s[1] = -sqrt_D - p;
@@ -101,13 +101,13 @@ __host__ __device__ int solve_quadric(double c[3], double s[2])
         return 0;
 }
 
-__host__ __device__ int solve_cubic(double c[4], double s[3])
+__host__ __device__ int solve_cubic(float c[4], float s[3])
 {
     int     i, num;
-    double  sub;
-    double  A, B, C;
-    double  sq_A, p, q;
-    double  cb_p, D;
+    float  sub;
+    float  A, B, C;
+    float  sq_A, p, q;
+    float  cb_p, D;
 
     /* normal form: x^3 + Ax^2 + Bx + C = 0 */
 
@@ -132,16 +132,16 @@ __host__ __device__ int solve_cubic(double c[4], double s[3])
             s[0] = 0;
             num = 1;
         }
-        else { /* one single and one double solution */
-            double u = cbrt(-q);
+        else { /* one single and one float solution */
+            float u = cbrt(-q);
             s[0] = 2 * u;
             s[1] = -u;
             num = 2;
         }
     }
     else if (D < 0) { /* Casus irreducibilis: three real solutions */
-        double phi = 1.0 / 3 * acos(-q / sqrt(-cb_p));
-        double t = 2 * sqrt(-p);
+        float phi = 1.0 / 3 * acos(-q / sqrt(-cb_p));
+        float t = 2 * sqrt(-p);
 
         s[0] = t * cos(phi);
         s[1] = -t * cos(phi + M_PI / 3);
@@ -149,9 +149,9 @@ __host__ __device__ int solve_cubic(double c[4], double s[3])
         num = 3;
     }
     else { /* one real solution */
-        double sqrt_D = sqrt(D);
-        double u = cbrt(sqrt_D - q);
-        double v = -cbrt(sqrt_D + q);
+        float sqrt_D = sqrt(D);
+        float u = cbrt(sqrt_D - q);
+        float v = -cbrt(sqrt_D + q);
 
         s[0] = u + v;
         num = 1;
@@ -167,12 +167,12 @@ __host__ __device__ int solve_cubic(double c[4], double s[3])
     return num;
 }
 
-__host__ __device__ int solve_quartic(double c[5], double s[4])
+__host__ __device__ int solve_quartic(float c[5], float s[4])
 {
-    double  coeffs[4];
-    double  z, u, v, sub;
-    double  A, B, C, D;
-    double  sq_A, p, q, r;
+    float  coeffs[4];
+    float  z, u, v, sub;
+    float  A, B, C, D;
+    float  sq_A, p, q, r;
     int     i, num;
 
     /* normal form: x^4 + Ax^3 + Bx^2 + Cx + D = 0 */
@@ -258,26 +258,26 @@ __host__ __device__ int solve_quartic(double c[5], double s[4])
     return num;
 }
 
-__device__ glm::vec3 get_orthogonal_vec(glm::vec3 in)
+__device__ float3 get_orthogonal_vec(float3 in)
 {
-    glm::vec3 majorAxis;
-    if (abs(in.x) < 0.57735026919f /* 1 / sqrt(3) */) {
-        majorAxis = glm::vec3(1, 0, 0);
+    float3 majorAxis;
+    if (fabs(in.x) < 0.57735026919f /* 1 / sqrt(3) */) {
+        majorAxis = make_float3(1, 0, 0);
     }
-    else if (abs(in.y) < 0.57735026919f /* 1 / sqrt(3) */) {
-        majorAxis = glm::vec3(0, 1, 0);
+    else if (fabs(in.y) < 0.57735026919f /* 1 / sqrt(3) */) {
+        majorAxis = make_float3(0, 1, 0);
     }
     else {
-        majorAxis = glm::vec3(0, 0, 1);
+        majorAxis = make_float3(0, 0, 1);
     }
     return majorAxis;
 }
 
-__device__ glm::mat4 get_TBN(glm::vec3 normal)
+/*__device__ glm::mat4 get_TBN(glm::vec3 normal)
 {
-    glm::vec3 N = normal;
-    glm::vec3 T = get_orthogonal_vec(N);
-    glm::vec3 B = normalize(cross(N, T));
+   float3 N = normal;
+   float3 T = get_orthogonal_vec(N);
+   float3 B = normalize(cross(N, T));
 
     return glm::mat3(T, N, B);
-}
+}*/

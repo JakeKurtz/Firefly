@@ -11,12 +11,12 @@ public:
 		Light()
 	{
 		ls = 1.f;
-		color = glm::vec3(1.f);
+		color = make_float3(1,1,1);
 	}
 
-	__device__ virtual glm::vec3 get_direction(ShadeRec& sr)
+	__device__ virtual float3 get_direction(ShadeRec& sr)
 	{
-		return (glm::vec3(0.f));
+		return (make_float3(0,0,0));
 	};
 
 	__device__ virtual bool in_shadow(const Ray& ray, const ShadeRec& sr) const 
@@ -24,7 +24,7 @@ public:
 		return false;
 	};
 
-	__device__ virtual bool visible(const Ray& ray, double& tmin, ShadeRec& sr) const
+	__device__ virtual bool visible(const Ray& ray, float& tmin, ShadeRec& sr) const
 	{
 		return false;
 	}
@@ -34,7 +34,7 @@ public:
 		return false;
 	}
 
-	__device__ virtual glm::vec3 L(ShadeRec& sr)
+	__device__ virtual float3 L(ShadeRec& sr)
 	{
 		return (ls * color);
 	};

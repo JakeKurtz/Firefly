@@ -12,11 +12,11 @@
 using namespace std;
 
 struct Vertex {
-    glm::dvec3 Position;
-    glm::dvec3 Normal;
-    glm::vec2 TexCoords;
-    glm::vec3 Tangent;
-    glm::vec3 Bitangent;
+    float3 Position;
+    float3 Normal;
+    float2 TexCoords;
+    float3 Tangent;
+    float3 Bitangent;
 };
 
 //struct Texture {

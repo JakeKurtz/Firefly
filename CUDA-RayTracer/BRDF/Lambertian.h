@@ -15,22 +15,22 @@ public:
 		return kd;
 	};
 
-	__device__ void set_cd(const glm::vec3& _cd) {
+	__device__ void set_cd(const float3& _cd) {
 		cd = _cd;
 	};
 
-	__device__ glm::vec3 get_cd(void) {
+	__device__ float3 get_cd(void) {
 		return cd;
 	};
 
-	__device__ virtual glm::vec3 f(const ShadeRec& sr, const glm::dvec3& wi, const glm::dvec3& wo) const {
+	__device__ virtual float3 f(const ShadeRec& sr, const float3& wi, const float3& wo) const {
 		return (kd * cd * M_1_PI);
 		//return (vec3) cd * (28.f / (23.f * M_PI)) * 0.5f * 0.5f * (vec3)(1.f - pow(1.f - 0.5f * glm::dot(sr.normal, wi), 5)) * (vec3)(1.f - pow(1 - 0.5f * glm::dot(sr.normal, wo), 5));
 	};
 
-	__device__ virtual glm::vec3 sample_f(const ShadeRec& sr, const glm::dvec3& wo, glm::dvec3& wi, float& pdf) const {
+	__device__ virtual float3 sample_f(const ShadeRec& sr, const float3& wo, float3& wi, float& pdf) const {
 
-		glm::vec3 N = sr.normal;
+		float3 N = sr.normal;
 
 		float e0 = random();
 		float e1 = random();
@@ -39,20 +39,20 @@ public:
 		float phi = 2 * M_PI * e1;
 		float x = sinTheta * cosf(phi);
 		float z = sinTheta * sinf(phi);
-		vec3 sp = dvec3(x, e0, z);
+		float3 sp = make_float3(x, e0, z);
 
-		glm::vec3 T = normalize(cross(N, get_orthogonal_vec(N)));
-		glm::vec3 B = normalize(cross(N, T));
+		float3 T = normalize(cross(N, get_orthogonal_vec(N)));
+		float3 B = normalize(cross(N, T));
 
 		wi = T * sp.x + N * sp.y + B * sp.z;
-		pdf = glm::abs(glm::dot(sr.normal, wi)) * M_1_PI;
+		pdf = abs(dot(sr.normal, wi)) * M_1_PI;
 
 		return (kd * cd * M_1_PI);
 	};
 
-	__device__ virtual glm::vec3 sample(const ShadeRec& sr, const glm::dvec3& wo) const {
+	__device__ virtual float3 sample(const ShadeRec& sr, const float3& wo) const {
 
-		glm::vec3 N = sr.normal;
+		float3 N = sr.normal;
 
 		float e0 = random();
 		float e1 = random();
@@ -61,28 +61,28 @@ public:
 		float phi = 2 * M_PI * e1;
 		float x = sinTheta * cosf(phi);
 		float z = sinTheta * sinf(phi);
-		vec3 sp = dvec3(x, e0, z);
+		float3 sp = make_float3(x, e0, z);
 
-		glm::vec3 T = normalize(cross(N, get_orthogonal_vec(N)));
-		glm::vec3 B = normalize(cross(N, T));
+		float3 T = normalize(cross(N, get_orthogonal_vec(N)));
+		float3 B = normalize(cross(N, T));
 
-		vec3 wi = T * sp.x + N * sp.y + B * sp.z;
+		float3 wi = T * sp.x + N * sp.y + B * sp.z;
 
 		return (wi);
 	};
 
-	__device__ double get_pdf(glm::dvec3 n, glm::dvec3 wi, glm::dvec3 wo) const
+	__device__ double get_pdf(float3 n, float3 wi, float3 wo) const
 	{
-		return glm::abs(glm::dot(n, wi)) * M_1_PI;
+		return abs(dot(n, wi)) * M_1_PI;
 	};
 
-	__device__ virtual glm::vec3 rho(const ShadeRec& sr, const glm::dvec3& wo) const {
+	__device__ virtual float3 rho(const ShadeRec& sr, const float3& wo) const {
 		return (kd * cd);
 	};
 
 private:
 	float kd;
-	glm::vec3 cd;
+	float3 cd;
 };
 
 #endif // !_RAYTRACER_BRDF_LAMBERTIAN_H_

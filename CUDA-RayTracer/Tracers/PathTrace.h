@@ -18,11 +18,11 @@ public:
 
 	__device__ virtual ~PathTrace(void) {};
 
-	__device__ virtual glm::vec3 trace_ray(Ray& ray) const {
+	__device__ virtual float3 trace_ray(Ray& ray) const {
 
-		vec3 L = vec3(0);
-		vec3 beta = vec3(1.f);
-		int maxDepth = 3;
+		float3 L = make_float3(0,0,0);
+		float3 beta = make_float3(1,1,1);
+		int maxDepth = 1;
 
 		for (int bounces = 0;; ++bounces) 
 		{
@@ -34,7 +34,7 @@ public:
 			// Terminate path if ray escaped or maxDepth is reached
 			if (!sr.hit_an_obj || bounces >= maxDepth)
 				break;
-
+			
 			// Possibly add emitted light at intersection
 			if (bounces == 0 && sr.material_ptr->is_emissive()) {
 				L += sr.material_ptr->shade(sr);
@@ -44,24 +44,24 @@ public:
 				L += beta * sr.material_ptr->shade(sr);
 			}
 			else break;
-
+			
 			// Sample BRDF to get new path direction
-			dvec3 wo = -sr.ray.d, wi;
+			float3 wo = -sr.ray.d, wi;
 			float pdf;
 
-			vec3 f = glm::max(vec3(0.0), sr.material_ptr->sample_f(sr, wo, wi, pdf));
+			float3 f = fmaxf(make_float3(0,0,0), sr.material_ptr->sample_f(sr, wo, wi, pdf));
 
-			if (f == vec3(0.f) || pdf == 0.f)
+			if (f == make_float3(0,0,0) || pdf == 0.f)
 				break;
 
-			float n_dot_wi = glm::max(0.0, glm::dot(sr.normal, wi));
+			float n_dot_wi = fmaxf(0.0, dot(sr.normal, wi));
 			
 			beta *= f * n_dot_wi / pdf;
 
 			ray = Ray(sr.local_hit_point, wi);
 
 			if (bounces > 3) {
-				float q = glm::max((float).05, 1 - beta.y);
+				float q = fmaxf((float).05, 1 - beta.y);
 				if (random() < q)
 					break;
 				beta /= 1 - q;

@@ -27,13 +27,13 @@ public:
 		return sampler_ptr;
 	};
 
-	__host__ __device__ glm::vec3 ray_direction(const glm::vec2& pixel_point, const glm::vec2& lens_point) const
+	__host__ __device__ float3 ray_direction(const float2& pixel_point, const float2& lens_point) const
 	{
-		glm::vec2 p;
+		float2 p;
 		p.x = pixel_point.x * (float) f / (float) d;
 		p.y = pixel_point.y * (float) f / (float) d;
 
-		glm::vec3 dir = normalize((p.x - lens_point.x) * right + (p.y - lens_point.y) * up - f * direction);
+		float3 dir = normalize((p.x - lens_point.x) * right + (p.y - lens_point.y) * up - f * direction);
 		return dir;
 	};
 

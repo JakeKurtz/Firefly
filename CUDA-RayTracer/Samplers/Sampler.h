@@ -21,11 +21,13 @@ public:
 
 	unsigned long		count;					// the current number of sample points used
 	int					jump;					// random index jump
+	curandState_t		state;
 
 	__device__ Sampler(int n) {
 		num_samples = n;
 		jump = 0;
 		count = 0;
+		//curand_init(0, 0, 0, &state);
 	};
 
 	__device__ virtual void generate_samples(void) = 0;

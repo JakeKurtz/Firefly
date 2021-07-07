@@ -10,16 +10,16 @@ public:
 
 	__device__ Rectangle(void)
 	{
-		point = glm::dvec3(0);
-		a = glm::dvec3(1, 0, 0);
-		b = glm::dvec3(0, 1, 0);
-		normal = glm::dvec3(0, 0, 1);
+		point = make_float3(0,0,0);
+		a = make_float3(1, 0, 0);
+		b = make_float3(0, 1, 0);
+		normal = make_float3(0, 0, 1);
 		a_len_squared = pow(length(a), 2);
 		b_len_squared = pow(length(b), 2);
-		inv_area = 1.f / (double)(length(a) * length(b));
+		inv_area = 1.f / (float)(length(a) * length(b));
 	};
 
-	__device__ Rectangle(glm::dvec3 p0, glm::dvec3 _a, glm::dvec3 _b, glm::dvec3 n)
+	__device__ Rectangle(float3 p0, float3 _a, float3 _b, float3 n)
 	{
 		point = p0;
 		a = _a;
@@ -27,7 +27,7 @@ public:
 		normal = n;
 		a_len_squared = pow(length(a), 2);
 		b_len_squared = pow(length(b), 2);
-		inv_area = 1.f / (double)(length(a) * length(b));
+		inv_area = 1.f / (float)(length(a) * length(b));
 	};
 
 	__device__ Rectangle* clone(void) const
@@ -35,12 +35,12 @@ public:
 		return (new Rectangle(*this));
 	}
 
-	__device__ virtual bool hit(const Ray& ray, double& tmin, ShadeRec& sr) const
+	__device__ virtual bool hit(const Ray& ray, float& tmin, ShadeRec& sr) const
 	{
-		double t = dot((point - ray.o), normal) / dot(ray.d, normal);
+		float t = dot((point - ray.o), normal) / dot(ray.d, normal);
 
-		glm::dvec3 p = ray.o + t * ray.d;
-		glm::dvec3 p0p = p - point;
+		float3 p = ray.o + t * ray.d;
+		float3 p0p = p - point;
 
 		if (t <= K_EPSILON)
 			return (false);
@@ -64,10 +64,10 @@ public:
 
 	__device__ virtual bool hit(const Ray& ray) const
 	{
-		double t = dot((point - ray.o), normal) / dot(ray.d, normal);
+		float t = dot((point - ray.o), normal) / dot(ray.d, normal);
 
-		glm::dvec3 p = ray.o + t * ray.d;
-		glm::dvec3 p0p = p - point;
+		float3 p = ray.o + t * ray.d;
+		float3 p0p = p - point;
 
 		if (t <= K_EPSILON)
 			return (false);
@@ -85,15 +85,15 @@ public:
 		return (true);
 	};
 
-	__device__ virtual bool shadow_hit(const Ray& ray, double& tmin) const
+	__device__ virtual bool shadow_hit(const Ray& ray, float& tmin) const
 	{
 		if (!shadows)
 			return (false);
 
-		double t = dot((point - ray.o), normal) / dot(ray.d, normal);
+		float t = dot((point - ray.o), normal) / dot(ray.d, normal);
 
-		glm::dvec3 p = ray.o + t * ray.d;
-		glm::dvec3 p0p = p - point;
+		float3 p = ray.o + t * ray.d;
+		float3 p0p = p - point;
 
 		if (t <= K_EPSILON)
 			return (false);
@@ -123,23 +123,24 @@ public:
 		sampler_ptr->generate_samples();
 	};
 
-	__device__ virtual glm::vec3 sample(void)
+	__device__ virtual float3 sample(void)
 	{
-		glm::dvec2 sample_point = sampler_ptr->sample_unit_square();
+		float2 sample_point = UniformSampleSquare();
+		//float2 sample_point = sampler_ptr->sample_unit_square();
 		return (point + sample_point.x * a + sample_point.y * b);
 	};
 
-	__device__ virtual glm::dvec3 get_normal(const glm::dvec3 p)
+	__device__ virtual float3 get_normal(const float3 p)
 	{
 		return normal;
 	};
 
 private:
-	glm::dvec3		point;
-	glm::dvec3		a;
-	glm::dvec3		b;
-	glm::dvec3		normal;
-	Sampler* sampler_ptr;
+	float3		point;
+	float3		a;
+	float3		b;
+	float3		normal;
+	Sampler*	sampler_ptr;
 	float		a_len_squared;
 	float		b_len_squared;
 };

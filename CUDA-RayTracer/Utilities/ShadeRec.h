@@ -11,11 +11,11 @@ public:
 	bool			hit_an_obj;
 	double			t;
 	Material*		material_ptr;
-	glm::dvec3		hit_point;			// world coord of hit point
-	glm::dvec3		local_hit_point;	// for attaching textures to object
-	glm::dvec3		normal;
+	float3			hit_point;			// world coord of hit point
+	float3			local_hit_point;	// for attaching textures to object
+	float3			normal;
 	Ray				ray;				// for specular highlights
-	glm::vec3		direction;			// for area lighs
+	float3			direction;			// for area lighs
 	Scene&			s;
 	int				depth;
 	bool			specular_sample;
@@ -23,9 +23,13 @@ public:
 	__device__ ShadeRec(Scene& s) :
 		hit_an_obj(false),
 		material_ptr(NULL),
-		hit_point(0), local_hit_point(0),
-		normal(0), ray(), direction(0), s(s), depth(0), specular_sample(false)
-	{};
+		ray(), s(s), depth(0), specular_sample(false)
+	{
+		hit_point = make_float3(0,0,0);
+		local_hit_point = make_float3(0,0,0);
+		normal = make_float3(0,0,0);
+		direction = make_float3(0,0,0);
+	};
 
 	__device__ ShadeRec(const ShadeRec& sr) :
 		hit_an_obj(sr.hit_an_obj),
