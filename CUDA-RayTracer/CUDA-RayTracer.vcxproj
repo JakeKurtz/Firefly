@@ -11,39 +11,40 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\AreaLight.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Bounds3f.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\BRDF.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\BVH.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Camera.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\CudaHelpers.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\cutil_math.h" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Emissive.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\GeometricObj.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\kernel.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Light.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Material.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Math.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Memory.h" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\MemoryArena.h" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Mesh.h" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Model.h" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Random.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Ray.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Rectangle.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Triangle.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\ViewPlane.cuh" />
+    <ClInclude Include="AreaLight.cuh" />
+    <ClInclude Include="Bounds3f.cuh" />
+    <ClInclude Include="BRDF.cuh" />
+    <ClInclude Include="BVH.cuh" />
+    <ClInclude Include="Camera.cuh" />
+    <ClInclude Include="CudaHelpers.cuh" />
     <ClInclude Include="cudaTexture.cuh" />
+    <ClInclude Include="cutil_math.h" />
+    <ClInclude Include="Emissive.cuh" />
+    <ClInclude Include="GeometricObj.cuh" />
     <ClInclude Include="imgui_impl_glfw.h" />
     <ClInclude Include="imgui_impl_glut.h" />
     <ClInclude Include="imgui_impl_opengl2.h" />
     <ClInclude Include="imgui_impl_opengl3.h" />
+    <ClInclude Include="kernel.cuh" />
+    <ClInclude Include="Light.cuh" />
+    <ClInclude Include="Material.cuh" />
     <ClInclude Include="Math.h" />
+    <ClInclude Include="Memory.h" />
+    <ClInclude Include="MemoryArena.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Model.h" />
+    <ClInclude Include="Random.cuh" />
+    <ClInclude Include="Ray.cuh" />
+    <ClInclude Include="Rectangle.cuh" />
+    <ClInclude Include="ShadeRec.cuh" />
     <ClInclude Include="Sphere.cuh" />
     <ClInclude Include="Texture.cuh" />
+    <ClInclude Include="Triangle.cuh" />
+    <ClInclude Include="ViewPlane.cuh" />
+    <ClInclude Include="wavefront.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\Pathtracer-sonic\Pathtracer-sonic\kernel.cu" />
+    <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgui_impl_glfw.cpp" />
@@ -51,6 +52,9 @@
     <ClCompile Include="imgui_impl_opengl2.cpp" />
     <ClCompile Include="imgui_impl_opengl3.cpp" />
     <ClCompile Include="InfiniteAreaLight.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{63904427-B4E6-4E0C-9AC5-11D68762DA18}</ProjectGuid>
