@@ -3,7 +3,7 @@
 #include <curand.h>
 #include <curand_kernel.h>
 #include <cuda_runtime.h>
-#include "Math.cuh"
+#include "Math.h"
 
 __constant__ unsigned int shift1[4] = { 6, 2, 13, 3 };
 __constant__ unsigned int shift2[4] = { 13, 27, 21, 12 };
@@ -42,7 +42,7 @@ __device__ float rand_float(int min, int max)
 
 __device__ int rand_int(int min, int max)
 {
-	return (int)((random() * (max - min)) + min);
+	return min + (int)(random() * INT_MAX) / (INT_MAX / (max - min + 1) + 1);
 };
 
 __device__ int rand_int()

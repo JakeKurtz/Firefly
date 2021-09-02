@@ -12,14 +12,17 @@ class Mesh {
 public:
     vector<Vertex>          vertices;
     vector<unsigned int>    indices;
+    vector<int>             texture_ids;
+    Material*                material;
 
     Vertex* d_vertices;
     unsigned int* d_indices;
 
-    Mesh(vector<Vertex> vertices, vector<unsigned int> indices)
+    Mesh(vector<Vertex> vertices, vector<unsigned int> indices, Material* material)
     {
         this->vertices = vertices;
         this->indices = indices;
+        this->material = material;
 
         //setup_mesh();
     }

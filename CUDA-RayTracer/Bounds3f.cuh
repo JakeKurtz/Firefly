@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Math.cuh"
+#include "Math.h"
 #include "Ray.cuh"
 
 __device__ __inline__ int   min_min(int a, int b, int c) { int v; asm("vmin.s32.s32.s32.min %0, %1, %2, %3;" : "=r"(v) : "r"(a), "r"(b), "r"(c)); return v; }

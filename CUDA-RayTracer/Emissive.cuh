@@ -21,7 +21,7 @@ public:
         return (ls * ce);
     };
 
-     __device__ virtual float3 get_Le(Isect& isect) const
+     __device__ virtual float3 get_Le(const Isect& isect) const
     {
         return (ls * ce);
     };

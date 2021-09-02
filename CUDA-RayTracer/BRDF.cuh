@@ -2,7 +2,7 @@
 #define _RAYTRACER_BRDF_BRDF_H_
 
 #include "ShadeRec.cuh"
-#include "Math.cuh"
+#include "Math.h"
 #include "Random.cuh"
 
 class BRDF

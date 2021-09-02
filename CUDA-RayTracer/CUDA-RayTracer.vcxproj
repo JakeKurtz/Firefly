@@ -16,30 +16,41 @@
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\BRDF.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\BVH.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Camera.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\CookTorrence.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\CudaHelpers.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\cutil_math.h" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Emissive.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\GeometricObj.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\kernel.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Lambertian.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Light.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Material.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Math.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Memory.h" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\MemoryArena.h" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Mesh.h" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\MicrofacetSpecular.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Model.h" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Random.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Ray.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Rectangle.cuh" />
-    <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\ShadeRec.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\Triangle.cuh" />
     <ClInclude Include="..\..\Pathtracer-sonic\Pathtracer-sonic\ViewPlane.cuh" />
+    <ClInclude Include="cudaTexture.cuh" />
+    <ClInclude Include="imgui_impl_glfw.h" />
+    <ClInclude Include="imgui_impl_glut.h" />
+    <ClInclude Include="imgui_impl_opengl2.h" />
+    <ClInclude Include="imgui_impl_opengl3.h" />
+    <ClInclude Include="Math.h" />
+    <ClInclude Include="Sphere.cuh" />
+    <ClInclude Include="Texture.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Pathtracer-sonic\Pathtracer-sonic\kernel.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="imgui_impl_glfw.cpp" />
+    <ClCompile Include="imgui_impl_glut.cpp" />
+    <ClCompile Include="imgui_impl_opengl2.cpp" />
+    <ClCompile Include="imgui_impl_opengl3.cpp" />
+    <ClCompile Include="InfiniteAreaLight.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{63904427-B4E6-4E0C-9AC5-11D68762DA18}</ProjectGuid>
@@ -77,25 +88,24 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>E:\repos\CUDA-RayTracer\middleware\assimp\include;E:\repos\CUDA-RayTracer\middleware\glfw\include;E:\repos\CUDA-RayTracer\middleware\glm;E:\repos\CUDA-RayTracer\middleware\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalUsingDirectories>E:\repos\CUDA-RayTracer\middleware\imgui;E:\repos\CUDA-RayTracer\middleware\glm;E:\repos\CUDA-RayTracer\middleware\stb;E:\repos\CUDA-RayTracer\middleware\glad;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\middleware\assimp\lib\x64;$(ProjectDir)..\middleware\glfw\lib\x64;E:\repos\CUDA-RayTracer\middleware\glfw\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>$(ProjectDir)..\middleware\imgui;$(ProjectDir)..\middleware\assimp\include;$(ProjectDir)..\middleware\glad\include;$(ProjectDir)..\middleware\glm;$(ProjectDir)..\middleware\stb;$(ProjectDir)..\middleware\glfw\include;$(ProjectDir)..\middleware\cub;%(Include)</Include>
-      <GenerateRelocatableDeviceCode>false</GenerateRelocatableDeviceCode>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <GPUDebugInfo>true</GPUDebugInfo>
       <GenerateLineInfo>false</GenerateLineInfo>
+      <Include>%(AdditionalLibraryDirectories)</Include>
     </CudaCompile>
+    <CudaLink />
     <CudaLink>
-      <AdditionalDependencies>$(ProjectDir)..\middleware\assimp\lib\x64;$(ProjectDir)..\middleware\glfw\lib\x64;$(ProjectDir)..\middleware\cub;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>E:\repos\CUDA-RayTracer\middleware\glfw\lib\x64;E:\repos\CUDA-RayTracer\middleware\assimp\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>-use_fast_math %(AdditionalOptions)</AdditionalOptions>
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -104,27 +114,26 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>E:\repos\CUDA-RayTracer\middleware\assimp\include;E:\repos\CUDA-RayTracer\middleware\glfw\include;E:\repos\CUDA-RayTracer\middleware\glm;E:\repos\CUDA-RayTracer\middleware\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalUsingDirectories>E:\repos\CUDA-RayTracer\middleware\imgui;E:\repos\CUDA-RayTracer\middleware\glm;E:\repos\CUDA-RayTracer\middleware\stb;E:\repos\CUDA-RayTracer\middleware\glad;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\middleware\assimp\lib\x64;$(ProjectDir)..\middleware\glfw\lib\x64;E:\repos\CUDA-RayTracer\middleware\glfw\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>$(ProjectDir)..\middleware\imgui;$(ProjectDir)..\middleware\assimp\include;$(ProjectDir)..\middleware\glad\include;$(ProjectDir)..\middleware\glm;$(ProjectDir)..\middleware\stb;$(ProjectDir)..\middleware\glfw\include;$(ProjectDir)..\middleware\cub;%(Include)</Include>
-      <GenerateRelocatableDeviceCode>false</GenerateRelocatableDeviceCode>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <GPUDebugInfo>true</GPUDebugInfo>
       <GenerateLineInfo>false</GenerateLineInfo>
+      <Include>%(AdditionalLibraryDirectories)</Include>
     </CudaCompile>
+    <CudaLink />
     <CudaLink>
-      <AdditionalDependencies>$(ProjectDir)..\middleware\assimp\lib\x64;$(ProjectDir)..\middleware\glfw\lib\x64;$(ProjectDir)..\middleware\cub;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>E:\repos\CUDA-RayTracer\middleware\glfw\lib\x64;E:\repos\CUDA-RayTracer\middleware\assimp\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>-use_fast_math %(AdditionalOptions)</AdditionalOptions>
     </CudaLink>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

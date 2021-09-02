@@ -8,252 +8,28 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <stdio.h>
+
 #include "Ray.cuh"
 #include "BVH.cuh"
 #include "Camera.cuh"
 #include "ViewPlane.cuh"
 #include "Model.h"
 
-#include <stb_image_write.h>
 #include "Random.cuh"
 #include "Emissive.cuh"
 #include "AreaLight.cuh"
 #include "Rectangle.cuh"
-
-typedef unsigned char uchar;
-
-const int SCR_WIDTH = 1000;
-const int SCR_HEIGHT = 1000;
-
-bool buffer_reset = false;
-
-float3  cam_pos             = make_float3(0, 200, 1000);
-float3  cam_lookat          = make_float3(0, 70, 0);
-float3  cam_dir;
-float3  cam_right;
-float3  cam_up;
-float3  cam_worldUp         = make_float3(0,1,0);
-float   cam_zoom            = 30;
-float   cam_lens_radius     = 0.1;
-float   cam_f               = 900.f;
-float   cam_d               = 100;
-float   cam_yaw             = 4.7;
-float   cam_pitch           = -3.2;
-
-float cam_movement_spd = 10;
-
-// image buffer storing accumulated pixel samples
-float4* accumulatebuffer;
-// final output buffer storing averaged pixel samples
-float3* finaloutputbuffer;
-
-//BVHNode* nodes = nullptr;
-//Triangle* triangles = nullptr;
-
-Paths* paths;
-Queues* queues;
-
-const uint32_t pathCount = SCR_WIDTH * SCR_HEIGHT;
-const uint32_t maxPathLength = 6;
-
-void save_image(const char* filename, const void* data) {
-    int stride = 3 * SCR_WIDTH;
-    stbi_write_png(filename, SCR_WIDTH, SCR_HEIGHT, 3, data, stride);
-}
+#include "Sphere.cuh"
+#include "Material.cuh"
 
 __device__ __inline__ uchar4 to_uchar4(float4 vec)
 {
     return make_uchar4((uchar)vec.x, (uchar)vec.y, (uchar)vec.z, (uchar)vec.w);
 }
 
-__device__ float3 trace_ray(Ray ray, LinearBVHNode* nodes) {
-
-    float3 L = make_float3(0, 0, 0);
-    float3 beta = make_float3(1, 1, 1);
-    int maxDepth = 2;
-
-    for (int bounces = 0;; ++bounces) {
-        
-        ShadeRec sr;
-        sr.bvh = nodes;
-        Intersect(ray, sr, nodes);
-        
-        sr.depth = bounces;
-        
-        if (!sr.hit_an_obj || bounces >= maxDepth)
-            break;
-        
-        bool in_shadow = false;
-
-        //float3 lightdir = normalize(make_float3(0, 300, 300) - sr.local_hit_point);
-        float3 lightdir, sample_point;
-        g_lights[0]->get_direction(sr, lightdir, sample_point);
-
-        //if (g_lights[0]->casts_shadows()) {
-            Ray shadow_ray(sr.local_hit_point, lightdir);
-            in_shadow = g_lights[0]->in_shadow(shadow_ray, sr);
-        //}
-
-        if (!in_shadow) {
-            float n_dot_wi = fmaxf(dot(sr.normal, lightdir), 0.f);
-            float3 f = make_float3(1) * M_1_PI * n_dot_wi * sr.material_ptr->get_cd();
-            float3 Li = g_lights[0]->L(sr, lightdir, sample_point);
-
-            L += f * Li * beta;
-        }
-        
-        // Sample BRDF to get new path direction
-        float3 N = sr.normal;
-        float3 wo = -sr.ray.d;
-
-        float e0 = random();
-        float e1 = random();
-
-        float sinTheta = sqrtf(1 - e0 * e0);
-        float phi = 2 * M_PI * e1;
-        float x = sinTheta * cosf(phi);
-        float z = sinTheta * sinf(phi);
-        float3 sp = make_float3(x, e0, z);
-
-        float3 T = normalize(cross(N, get_orthogonal_vec(N)));
-        float3 B = normalize(cross(N, T));
-
-        float3 wi = T * sp.x + N * sp.y + B * sp.z;
-
-        float pdf = abs(dot(N, wi)) * M_1_PI;
-        float3 f = M_1_PI * sr.material_ptr->get_cd();
-
-        if (f == make_float3(0, 0, 0) || pdf == 0.f)
-            break;
-
-        float n_dot_wi = fmaxf(0.0, dot(sr.normal, wi));
-
-        beta *= f * n_dot_wi / pdf;
-
-        ray = Ray(sr.local_hit_point, wi);
-
-        if (bounces > 3) {
-            float q = fmaxf((float).05, 1 - beta.y);
-            if (random() < q)
-                break;
-            beta /= 1 - q;
-        }
-        
-        /*
-        // Terminate path if ray escaped or maxDepth is reached
-        if (!sr.hit_an_obj || bounces >= maxDepth)
-            break;
-
-        // Possibly add emitted light at intersection
-        if (bounces == 0 && sr.material_ptr->is_emissive()) {
-            L += sr.material_ptr->shade(sr);
-        }
-        else if (!sr.material_ptr->is_emissive()) {
-            // Sample illumination from lights to find path contribution
-            L += beta * sr.material_ptr->shade(sr);   
-        }
-        else break;
-        
-        // Sample BRDF to get new path direction
-        float3 wo = -sr.ray.d, wi;
-        float pdf;
-        float3 f = fmaxf(make_float3(0,0,0), sr.material_ptr->sample_f(sr, wo, wi, pdf));
-
-        if (f == make_float3(0,0,0) || pdf == 0.f)
-            break;
-
-        float n_dot_wi = fmaxf(0.0, dot(sr.normal, wi));
-
-        beta *= f * n_dot_wi / pdf;
-
-        ray = Ray(sr.local_hit_point, wi);
-
-        if (bounces > 3) {
-            float q = fmaxf((float).05, 1 - beta.y);
-            if (random() < q)
-                break;
-            beta /= 1 - q;
-        }
-        */
-    }
-    return (L);
-};
-
-__global__ void render(uchar4* fb, float4* fb_accum, LinearBVHNode* nodes, unsigned int framenumber) {
-    
-    float3		pixel_color = make_float3(0, 0, 0);
-    Ray			ray;
-    float2		sp;				// sample point in [0, 1] x [0, 1]
-    float2		pp;				// sample point on a pixel
-    float2		dp;				// sample point on unit disk
-    float2		lp;				// sample point on lens
-
-    unsigned int i = threadIdx.x + blockIdx.x * blockDim.x;
-    unsigned int j = threadIdx.y + blockIdx.y * blockDim.y;
-
-    if ((i >= g_viewplane_ptr->hres) || (j >= g_viewplane_ptr->vres)) return;
-
-    int pixel_index = j * g_viewplane_ptr->hres + i;
-
-    float lens_radius = g_camera_ptr->lens_radius;
-
-    //for (int n = 0; n < g_viewplane_ptr->num_samples; n++) {
-        sp = UniformSampleSquare();
-
-        pp.x = g_viewplane_ptr->s * (i - 0.5 * g_viewplane_ptr->hres + sp.x);
-        pp.y = g_viewplane_ptr->s * (j - 0.5 * g_viewplane_ptr->vres + sp.y);
-
-        dp = ConcentricSampleDisk();
-        lp = dp * lens_radius;
-
-        ray.o = g_camera_ptr->position + lp.x * g_camera_ptr->right + lp.y * g_camera_ptr->up;
-        ray.d = g_camera_ptr->ray_direction(pp, lp);
-
-        pixel_color += trace_ray(ray, nodes);
-        
-    //}
-    //pixel_color *= g_camera_ptr->exposure_time;
-    //pixel_color /= framenumber;//(float)g_viewplane_ptr->num_samples;
-
-    //pixel_color /= (pixel_color + 1.0f); // Hard coded Reinhard tone mapping
-
-    //if (vp.gamma != 1.f)
-        //    pixel_color = pow(pixel_color, vp.inv_gamma);
-
-    fb_accum[pixel_index] += make_float4(pixel_color, 0);
-
-    float4 final_col = fb_accum[pixel_index] / framenumber;
-    final_col /= (final_col + 1.0f);
-
-    fb[pixel_index] = to_uchar4(final_col * 255.0);
-}
-
 __global__ void init_render()
 {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
-        /*g_camera_ptr->position = make_float3(0, 200, 1000);
-        g_camera_ptr->lookat = make_float3(0, 70, 0);
-        g_camera_ptr->world_up = make_float3(0, 1, 0);
-        g_camera_ptr->exposure_time = 1.f;
-        g_camera_ptr->d = 100;
-        g_camera_ptr->zoom = 30;
-        g_camera_ptr->lens_radius = 120.f;
-        g_camera_ptr->f = 900.f;
-        g_camera_ptr->update_camera_vectors();
-
-        printf("Camera Properties\n");
-        printf("\t%-20s%-12.2f\n", "exposure time:", g_camera_ptr->exposure_time);
-        printf("\t%-20s%-12.2f\n", "view distance:", g_camera_ptr->d);
-        printf("\t%-20s%-12.2f\n", "zoom:", g_camera_ptr->zoom);
-        printf("\t%-20s%-12.2f\n", "lens radius:", g_camera_ptr->lens_radius);
-        printf("\t%-20s%-12.2f\n", "focal distance:", g_camera_ptr->f);
-
-        printf("\t%-20s(%.2f, %.2f, %.2f)\n", "position:", g_camera_ptr->position.x, g_camera_ptr->position.y, g_camera_ptr->position.z);
-        printf("\t%-20s(%.2f, %.2f, %.2f)\n", "lookat:", g_camera_ptr->lookat.x, g_camera_ptr->lookat.y, g_camera_ptr->lookat.z);
-        printf("\t%-20s(%.2f, %.2f, %.2f)\n", "direction:", g_camera_ptr->direction.x, g_camera_ptr->direction.y, g_camera_ptr->direction.z);
-        printf("\t%-20s(%.2f, %.2f, %.2f)\n", "right:", g_camera_ptr->right.x, g_camera_ptr->right.y, g_camera_ptr->right.z);
-        printf("\t%-20s(%.2f, %.2f, %.2f)\n", "direction:", g_camera_ptr->up.x, g_camera_ptr->up.y, g_camera_ptr->up.z);
-        */
         g_viewplane_ptr->gamma = 1.f;
         g_viewplane_ptr->hres = SCR_WIDTH;
         g_viewplane_ptr->vres = SCR_HEIGHT;
@@ -266,87 +42,125 @@ __global__ void init_render()
         printf("\t%-20s%-12d\n", "samples:", g_viewplane_ptr->num_samples);
         printf("\t%-20s%-12.2f\n", "gamma:", g_viewplane_ptr->gamma);
         printf("\t%-20s%-12.2f\n", "pixel size:", g_viewplane_ptr->s);
-        
-        Emissive* emissive_ptr = new Emissive;
-        emissive_ptr->scale_radiance(120);
-        //emissive_ptr->scale_radiance(250);
-        //emissive_ptr->set_ce(1, 1, 1);
-        emissive_ptr->set_ce(0.96470, 0.80392, 0.54509);
 
-        _Rectangle* rect_ptr = new _Rectangle(make_float3(-37.5, 386.74999, 300), make_float3(75, 0, 0), make_float3(0, 0, 75), make_float3(0, -1, 0));
-        rect_ptr->set_material(emissive_ptr);
-        rect_ptr->enable_shadows(false);
+        // LIGHT 1
+        float3 kitchen_lightcol = make_float3(1.0000, 0.8392, 0.6666);
+        float kitchen_lightpow = 125;
+
+        Sphere* sphere_ptr = new Sphere(make_float3(-120, 60.5, -90), 4);
+
+        Material* mat = new Material();
+        mat->emissiveColor = kitchen_lightcol;
+        mat->materialIndex = MaterialIndex::Emissive;
+        mat->radiance = kitchen_lightpow;
+        mat->emissive = true;
 
         AreaLight* area_light_ptr = new AreaLight;
-        area_light_ptr->set_object(rect_ptr);
-        area_light_ptr->set_material(emissive_ptr);
-        area_light_ptr->enable_shadows(true);
-
-        g_lights[0] = area_light_ptr;
-//        g_num_lights = 1;
+        area_light_ptr->set_object(sphere_ptr);
+        area_light_ptr->material_ptr = mat;
         
+        g_lights[0] = area_light_ptr;
+
+        // LIGHT 2
+        sphere_ptr = new Sphere(make_float3(-60, 60.5, -90), 4);
+
+        mat = new Material();
+        mat->emissiveColor = kitchen_lightcol;
+        mat->materialIndex = MaterialIndex::Emissive;
+        mat->radiance = kitchen_lightpow;
+        mat->emissive = true;
+
+        area_light_ptr = new AreaLight;
+        area_light_ptr->set_object(sphere_ptr);
+        area_light_ptr->material_ptr = mat;
+
+        g_lights[1] = area_light_ptr;
+
+        // LIGHT 3
+        sphere_ptr = new Sphere(make_float3(0, 60.5, -90), 4);
+
+        mat = new Material();
+        mat->emissiveColor = kitchen_lightcol;
+        mat->materialIndex = MaterialIndex::Emissive;
+        mat->radiance = kitchen_lightpow;
+        mat->emissive = true;
+
+        area_light_ptr = new AreaLight;
+        area_light_ptr->set_object(sphere_ptr);
+        area_light_ptr->material_ptr = mat;
+
+        g_lights[2] = area_light_ptr;
+
+        //LIGHT 4
+        sphere_ptr = new Sphere(make_float3(60, 60.5, -90), 4);
+
+        mat = new Material();
+        mat->emissiveColor = kitchen_lightcol;
+        mat->materialIndex = MaterialIndex::Emissive;
+        mat->radiance = kitchen_lightpow;
+        mat->emissive = true;
+
+        area_light_ptr = new AreaLight;
+        area_light_ptr->set_object(sphere_ptr);
+        area_light_ptr->material_ptr = mat;
+
+        g_lights[3] = area_light_ptr;
     }
 }
 
 __global__ void update_camera(
-    float3  pos, 
-    float   zoom, 
-    float   lens_radius, 
-    float   f, 
-    float   d, 
-    float   yaw, 
-    float   pitch) 
+    float3  pos,
+    float   zoom,
+    float   lens_radius,
+    float   f,
+    float   d,
+    float   exposure_time,
+    float   yaw,
+    float   pitch)
 {
     g_camera_ptr->position = pos;
-    g_camera_ptr->world_up = make_float3(0,1,0);
+    g_camera_ptr->world_up = make_float3(0, 1, 0);
     g_camera_ptr->d = d;
     g_camera_ptr->zoom = zoom;
     g_camera_ptr->lens_radius = lens_radius;
     g_camera_ptr->f = f;
     g_camera_ptr->yaw = yaw;
     g_camera_ptr->pitch = pitch;
+    g_camera_ptr->exposure_time = exposure_time;
     g_camera_ptr->update_camera_vectors();
 
+    g_viewplane_ptr->s = 1.f / g_camera_ptr->zoom;
+
     printf("PITCH:%f\tYAW:%f\n", pitch, yaw);
+    printf("POS:\t%f,%f,%f\n", pos.x, pos.y, pos.z);
 }
 
 __global__ void wf_init(
-    Paths* __restrict paths, 
-    uint32_t pathCount) 
+    Paths* __restrict paths,
+    uint32_t PATHCOUNT)
 {
     uint32_t id = get_thread_id();
 
-    if (id >= pathCount)
-        return;
-
-    paths->result[id] = make_float3(0.0f, 0.0f, 0.0f);
-    paths->length[id] = 0;
-    paths->extensionIntersection[id] = Isect();
-}
-
-__global__ void clearPathsKernel(Paths* paths, uint32_t pathCount)
-{
-    uint32_t id = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (id >= pathCount)
+    if (id >= PATHCOUNT)
         return;
 
     paths->length[id] = 0;
-    paths->extensionIntersection[id] = Isect();
+    paths->ext_isect[id] = Isect();
 }
 
 __global__ void wf_logic(
-    Paths* __restrict paths, 
+    Paths* __restrict paths,
     Queues* __restrict queues,
     uchar4* fb,
     float4* fb_accum,
-    uint32_t pathCount,
-    uint32_t maxPathLength,
-    unsigned int framenumber) {
-
+    int* n_samples,
+    uint32_t PATHCOUNT,
+    uint32_t MAXPATHLENGTH,
+    unsigned int framenumber) 
+{
     const uint32_t id = get_thread_id();
 
-    if (id > pathCount)
+    if (id > PATHCOUNT)
         return;
 
     bool terminate = false;
@@ -354,25 +168,38 @@ __global__ void wf_logic(
     float3 beta = paths->throughput[id];
     uint32_t pathLength = paths->length[id];
 
-    int x = int(paths->filmSamplePosition[id].x);
-    int y = int(paths->filmSamplePosition[id].y);
+    Material* material_ptr = paths->ext_isect[id].material_ptr;
+
+    int x = int(paths->film_pos[id].x);
+    int y = int(paths->film_pos[id].y);
 
     int pixel_index = y * g_viewplane_ptr->hres + x;
-    
-    if (pathLength >= maxPathLength || !paths->extensionIntersection[id].wasFound) {
+
+    if (pathLength > MAXPATHLENGTH || !paths->ext_isect[id].wasFound) {
         terminate = true;
         goto TERMINATE;
     }
 
-    if (pathLength > 1) {
+    if (paths->ext_isect[id].material_ptr->materialIndex == MaterialIndex::Emissive) {
+        fb_accum[pixel_index] += make_float4(beta * emissive_L(material_ptr), 0);
+        terminate = true;
+        goto TERMINATE;
+    }
 
-        if (!paths->lightRayBlocked[id]) {
-            fb_accum[pixel_index] += make_float4(paths->lightBrdf[id] * beta, 0);
+    //if (pathLength == 1) {
+    //    fb_accum[pixel_index] += make_float4(emissive_L(material_ptr), 0);
+        //terminate = true;
+        //goto TERMINATE;
+    //}
+
+    if (pathLength > 1) {
+        if (!paths->light_inshadow[id]) {
+            fb_accum[pixel_index] += make_float4(paths->light_brdf[id] * beta, 0);
         }
 
-        float pdf = paths->extensionBrdfPdf[id];
-        float3 f = paths->extensionBrdf[id];
-        float n_dot_wi = paths->extensionCosine[id];
+        float pdf = paths->ext_pdf[id];
+        float3 f = paths->ext_brdf[id];
+        float n_dot_wi = paths->ext_cosine[id];
 
         if (f == make_float3(0, 0, 0) || pdf == 0.f) {
             terminate = true;
@@ -385,42 +212,69 @@ __global__ void wf_logic(
             float q = fmaxf((float).05, 1 - beta.y);
             if (random() < q)
                 terminate = true;
+                goto TERMINATE;
             beta /= 1 - q;
         }
     }
 
-    TERMINATE:
-     
+TERMINATE:
+
     if (terminate)
     {
+        n_samples[pixel_index]++;
         if (pathLength > 0) {
-            fb_accum[pixel_index] += make_float4(paths->result[id], 0);
-
-            float4 final_col = fb_accum[pixel_index] / framenumber;
+            float4 final_col = fb_accum[pixel_index] / framenumber;//(float)n_samples[pixel_index];
+            final_col *= g_camera_ptr->exposure_time;
             final_col /= (final_col + 1.0f);
-
             fb[pixel_index] = to_uchar4(final_col * 255.0);
         }
 
         // add path to newPath queue
-        uint32_t queueIndex = atomicAggInc(&queues->newPathQueueLength);
-        queues->newPathQueue[queueIndex] = id;
+        uint32_t queueIndex = atomicAggInc(&queues->queue_newPath_length);
+        queues->queue_newPath[queueIndex] = id;
     }
+
     else // path continues
     {
-        //float3 lightdir = normalize(make_float3(0, 300, 300) - paths->extensionIntersection[id].position);
-
         float3 lightdir, sample_point;
-        g_lights[0]->get_direction(paths->extensionIntersection[id], lightdir, sample_point);
+        uint32_t queueIndex;
+        Ray shadow_ray;
 
-        Ray shadow_ray(paths->extensionIntersection[id].position, lightdir);
-        paths->lightRay[id] = shadow_ray;
-        paths->lightSamplePoint[id] = sample_point;
+        int light_id = rand_int(0, 3);
+        paths->light_id[id] = light_id;
 
-        // add path to diffuse material queue
-        uint32_t queueIndex = atomicAggInc(&queues->diffuseMaterialQueueLength);
-        queues->diffuseMaterialQueue[queueIndex] = id;
+        switch (paths->ext_isect[id].material_ptr->materialIndex) {
+        case MaterialIndex::Diffuse:
+            g_lights[light_id]->get_direction(paths->ext_isect[id], lightdir, sample_point);
 
+            shadow_ray = Ray(paths->ext_isect[id].position, lightdir);
+            paths->light_ray[id] = shadow_ray;
+            paths->light_samplePoint[id] = sample_point;
+
+            queueIndex = atomicAggInc(&queues->queue_mat_diffuse_length);
+            queues->queue_mat_diffuse[queueIndex] = id;
+            break;
+        case MaterialIndex::CookTor:
+            g_lights[light_id]->get_direction(paths->ext_isect[id], lightdir, sample_point);
+
+            shadow_ray = Ray(paths->ext_isect[id].position, lightdir);
+            paths->light_ray[id] = shadow_ray;
+            paths->light_samplePoint[id] = sample_point;
+
+            queueIndex = atomicAggInc(&queues->queue_mat_cook_length);
+            queues->queue_mat_cook[queueIndex] = id;
+            break;
+        case MaterialIndex::Mix:
+            g_lights[light_id]->get_direction(paths->ext_isect[id], lightdir, sample_point);
+
+            shadow_ray = Ray(paths->ext_isect[id].position, lightdir);
+            paths->light_ray[id] = shadow_ray;
+            paths->light_samplePoint[id] = sample_point;
+
+            queueIndex = atomicAggInc(&queues->queue_mat_mix_length);
+            queues->queue_mat_mix[queueIndex] = id;
+            break;
+        }
         paths->throughput[id] = beta;
     }
 }
@@ -428,15 +282,15 @@ __global__ void wf_logic(
 __global__ void wf_generate(
     Paths* __restrict paths,
     Queues* __restrict queues,
-    uint32_t pathCount,
-    uint32_t maxPathLength)
+    uint32_t PATHCOUNT,
+    uint32_t MAXPATHLENGTH)
 {
     uint32_t id = get_thread_id();
 
-    if (id >= queues->newPathQueueLength)
+    if (id >= queues->queue_newPath_length)
         return;
 
-    id = queues->newPathQueue[id];
+    id = queues->queue_newPath[id];
 
     Ray			ray;
     float2		sp;				// sample point in [0, 1] x [0, 1]
@@ -458,115 +312,184 @@ __global__ void wf_generate(
     ray.o = g_camera_ptr->position + lp.x * g_camera_ptr->right + lp.y * g_camera_ptr->up;
     ray.d = g_camera_ptr->ray_direction(pp, lp);
 
-    paths->filmSamplePosition[id] = make_float2(x,y);
+    paths->film_pos[id] = make_float2(x, y);
     paths->throughput[id] = make_float3(1.0f);
-    paths->result[id] = make_float3(0.0f);
-    paths->extensionRay[id] = ray;
+    paths->ext_ray[id] = ray;
     paths->length[id] = 0;
 
-    uint32_t queueIndex = atomicAggInc(&queues->extensionRayQueueLength);
-    queues->extensionRayQueue[queueIndex] = id;
+    uint32_t queueIndex = atomicAggInc(&queues->queue_extension_length);
+    queues->queue_extension[queueIndex] = id;
 }
 
 __global__ void wf_extend(
     Paths* __restrict paths,
-    Queues* __restrict queues, 
-    LinearBVHNode* __restrict nodes) 
+    Queues* __restrict queues)
 {
     uint32_t id = get_thread_id();
 
-    if (id >= queues->extensionRayQueueLength)
+    if (id >= queues->queue_extension_length)
         return;
 
-    id = queues->extensionRayQueue[id];
+    id = queues->queue_extension[id];
 
-    Ray ray = paths->extensionRay[id];
-    Isect intersection;
-    Intersect(ray, intersection, nodes);
+    Ray ray = paths->ext_ray[id];
+    Isect isect;
+    intersect(ray, isect, paths->ext_isect[id]);
 
-    // make normal always to face the ray
-    if (intersection.wasFound && dot(intersection.normal, ray.d) > 0.0f)
-        intersection.normal = -intersection.normal;
+    Isect isect_light;
+    float tmin_light;
 
-    paths->length[id]++;
-    paths->extensionIntersection[id] = intersection;
+    int light_id = paths->light_id[id];
+
+    if (g_lights[light_id]->visible(ray, tmin_light, isect_light) && isect_light.distance < isect.distance) {
+        isect_light.material_ptr = g_lights[light_id]->material_ptr;
+        paths->length[id]++;
+        paths->ext_isect[id] = isect_light;
+    }
+    else {
+        // make normal always to face the ray
+        //if (isect.wasFound && dot(isect.normal, ray.d) > 0.0f)
+            //isect.normal = -isect.normal;
+
+        paths->length[id]++;
+        paths->ext_isect[id] = isect;
+    }
 }
 
 __global__ void wf_shadow(
     Paths* __restrict paths,
-    Queues* __restrict queues,
-    LinearBVHNode* __restrict nodes)
+    Queues* __restrict queues)
 {
     uint32_t id = get_thread_id();
 
-    if (id >= queues->lightRayQueueLength)
+    if (id >= queues->queue_shadow_length)
         return;
 
-    id = queues->lightRayQueue[id];
+    id = queues->queue_shadow[id];
 
-    Ray ray = paths->lightRay[id];
-    paths->lightRayBlocked[id] = g_lights[0]->in_shadow(ray, nodes);
+    Ray ray = paths->light_ray[id];
+    int light_id = paths->light_id[id];
+    paths->light_inshadow[id] = g_lights[light_id]->in_shadow(ray);
 }
 
-__global__ void wf_shade(
+__global__ void wf_mat_diffuse(
     Paths* __restrict paths,
-    Queues* __restrict queues) 
+    Queues* __restrict queues)
 {
     uint32_t id = get_thread_id();
 
-    if (id >= queues->diffuseMaterialQueueLength)
+    if (id >= queues->queue_mat_diffuse_length)
         return;
 
-    id = queues->diffuseMaterialQueue[id];
+    id = queues->queue_mat_diffuse[id];
 
-    const Isect extensionIntersection = paths->extensionIntersection[id];
-    //const Material extensionMaterial = materials[extensionIntersection.materialIndex];
+    const Isect isect = paths->ext_isect[id];
+    const float3 wi = paths->light_ray[id].d;
+    const float3 wo = -paths->ext_ray[id].d;
+    const float3 sample_point = paths->light_samplePoint[id];
+    int light_id = paths->light_id[id];
+    float3 ext_dir = diff_sample(isect);
+    Ray ext_ray = Ray(isect.position, ext_dir);
 
-    //////////////////////////////////////////////////////
+    paths->ext_ray[id] = ext_ray;
+    paths->light_brdf[id] = diff_L(isect, wi, wo, light_id, sample_point);
+    paths->ext_brdf[id] = diff_f(isect, ext_dir, wo);
+    paths->ext_pdf[id] = diff_get_pdf();
+    paths->ext_cosine[id] = fmaxf(0.0, dot(isect.normal, ext_dir));
 
-    float e0 = random();
-    float e1 = random();
+    uint32_t queueIndex = atomicAggInc(&queues->queue_extension_length);
+    queues->queue_extension[queueIndex] = id;
 
-    float sinTheta = sqrtf(1 - e0 * e0);
-    float phi = 2 * M_PI * e1;
-    float x = sinTheta * cosf(phi);
-    float z = sinTheta * sinf(phi);
-    float3 sp = make_float3(x, e0, z);
+    queueIndex = atomicAggInc(&queues->queue_shadow_length);
+    queues->queue_shadow[queueIndex] = id;
+}
 
-    float3 N = extensionIntersection.normal;
-    float3 T = normalize(cross(N, get_orthogonal_vec(N)));
-    float3 B = normalize(cross(N, T));
+__global__ void wf_mat_cook(
+    Paths* __restrict paths,
+    Queues* __restrict queues)
+{
+    uint32_t id = get_thread_id();
 
-    float3 extensionDir = T * sp.x + N * sp.y + B * sp.z;
+    if (id >= queues->queue_mat_cook_length)
+        return;
 
-    //////////////////////////////////////////////////////
+    id = queues->queue_mat_cook[id];
 
-    paths->extensionBrdf[id] = make_float3(1) * M_1_PI;//material.cd * M_1_PI;
-    paths->extensionBrdfPdf[id] = abs(dot(extensionIntersection.normal, extensionDir)) * M_1_PI;
-    paths->extensionCosine[id] = fmaxf(0.0, dot(extensionIntersection.normal, extensionDir));
+    const Isect isect = paths->ext_isect[id];
+    const Material* material = isect.material_ptr;
+    const float3 wi = paths->light_ray[id].d;
+    const float3 wo = -paths->ext_ray[id].d;
+    const float3 sample_point = paths->light_samplePoint[id];
+    int light_id = paths->light_id[id];
+    const float3 ext_dir = ct_sample(isect, wo);
+    Ray ext_ray = Ray(isect.position, ext_dir);
 
-    float n_dot_wi = fmaxf(dot(paths->extensionIntersection[id].normal, paths->lightRay[id].d), 0.0);
-    float3 f = make_float3(1) * M_1_PI * n_dot_wi;
-    float3 Li = g_lights[0]->L(paths->extensionIntersection[id], paths->lightRay[id].d, paths->lightSamplePoint[id]);
-    paths->lightBrdf[id] = f * Li;
-    //paths->lightBrdfPdf[id] = getDiffusePdf(extensionIntersection.normal, paths->lightRay[id].direction);
+    paths->ext_ray[id] = ext_ray;
+    paths->light_brdf[id] = ct_L(isect, wi, wo, light_id, sample_point, get_roughness(isect));
+    paths->ext_brdf[id] = ct_f(isect, ext_dir, wo);
+    paths->ext_pdf[id] = ct_get_pdf(isect.normal, ext_dir, wo, get_roughness(isect));
+    paths->ext_cosine[id] = fmaxf(0.0, dot(isect.normal, ext_dir));
 
-    Ray extensionRay;
-    extensionRay.o = extensionIntersection.position;
-    extensionRay.d = extensionDir;
+    uint32_t queueIndex = atomicAggInc(&queues->queue_extension_length);
+    queues->queue_extension[queueIndex] = id;
 
-    paths->extensionRay[id] = extensionRay;
+    queueIndex = atomicAggInc(&queues->queue_shadow_length);
+    queues->queue_shadow[queueIndex] = id;
+}
 
-    uint32_t queueIndex = atomicAggInc(&queues->extensionRayQueueLength);
-    queues->extensionRayQueue[queueIndex] = id;
+__global__ void wf_mat_mix(
+    Paths* __restrict paths,
+    Queues* __restrict queues)
+{
+    uint32_t id = get_thread_id();
 
-    queueIndex = atomicAggInc(&queues->lightRayQueueLength);
-    queues->lightRayQueue[queueIndex] = id;
+    if (id >= queues->queue_mat_mix_length)
+        return;
+
+    id = queues->queue_mat_mix[id];
+
+    const Isect isect = paths->ext_isect[id];
+    const Material* material = isect.material_ptr;
+    const float3 wi = paths->light_ray[id].d;
+    const float3 wo = -paths->ext_ray[id].d;
+    const float3 sample_point = paths->light_samplePoint[id];
+    int light_id = paths->light_id[id];
+
+    float3 ext_dir;
+    if (random() < 0.5) {
+        ext_dir = ct_sample(isect, wo);
+        Ray ext_ray = Ray(isect.position, ext_dir);
+
+        paths->ext_ray[id] = ext_ray;
+        paths->light_brdf[id] = ct_L(isect, wi, wo, light_id, sample_point, get_roughness(isect));
+        paths->ext_pdf[id] = ct_get_pdf(isect.normal, ext_dir, wo, get_roughness(isect));
+        paths->ext_brdf[id] = ct_f(isect, ext_dir, wo);
+    }
+    else {
+        ext_dir = diff_sample(isect);
+        Ray ext_ray = Ray(isect.position, ext_dir);
+
+        paths->ext_ray[id] = ext_ray;
+        paths->light_brdf[id] = diff_L(isect, wi, wo, light_id, sample_point);
+        paths->ext_pdf[id] = diff_get_pdf();
+        paths->ext_brdf[id] = diff_f(isect, ext_dir, wo);
+    }
+
+    paths->ext_cosine[id] = fmaxf(0.0, dot(isect.normal, ext_dir));
+    //paths->ext_brdf[id] = mix_f(isect, ext_dir, wo);
+    //paths->ext_pdf[id] = mix_get_pdf(isect.normal, ext_dir, wo, material);
+    //paths->light_brdf[id] = mix_L(isect, wi, wo, sample_point, material->roughness);
+
+    uint32_t queueIndex = atomicAggInc(&queues->queue_extension_length);
+    queues->queue_extension[queueIndex] = id;
+
+    queueIndex = atomicAggInc(&queues->queue_shadow_length);
+    queues->queue_shadow[queueIndex] = id;
 }
 
 __global__ void wf_drawbuff(
-    Paths* __restrict paths, 
-    uchar4* fb, 
+    Paths* __restrict paths,
+    uchar4* fb,
     float4* fb_accum,
     uint32_t pixelCount,
     unsigned int framenumber)
@@ -576,8 +499,8 @@ __global__ void wf_drawbuff(
     if (id >= pixelCount)
         return;
 
-    int x = int(paths->filmSamplePosition[id].x);
-    int y = int(paths->filmSamplePosition[id].y);
+    int x = int(paths->film_pos[id].x);
+    int y = int(paths->film_pos[id].y);
 
     int pixel_index = y * g_viewplane_ptr->hres + x;
 
@@ -586,373 +509,62 @@ __global__ void wf_drawbuff(
     fb[pixel_index] = to_uchar4(pixel_col * 255.0);
 }
 
-void display(void)
-{
-    if (buffer_reset) { 
-        update_camera <<< 1, 1 >>> (cam_pos, cam_zoom, cam_lens_radius, cam_f, cam_d, cam_yaw, cam_pitch);
-        cudaMemset(accumulatebuffer, 1, SCR_WIDTH * SCR_HEIGHT * sizeof(float4)); 
-        framenumber = 0; 
-    }
+static void glfw_window_size_callback(GLFWwindow* window, int width, int height);
+static void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+static void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-    buffer_reset = false;
-    framenumber++;
+void setup_glfw() {
+    if (!glfwInit()) exit(EXIT_FAILURE);
+    if (atexit(glfwTerminate)) { glfwTerminate(); exit(EXIT_FAILURE); }
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "gl-cuda-test", NULL, NULL);
+    if (!window) exit(EXIT_FAILURE);
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+    if (glewInit() != GLEW_OK) exit(EXIT_FAILURE);
 
-    // map PBO to get CUDA device pointer
-    checkCudaErrors(cudaGraphicsMapResources(1, &cuda_pbo_resource, 0));
-    size_t num_bytes;
-    checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_vbo, &num_bytes, cuda_pbo_resource));
-
-    int nx = SCR_WIDTH;
-    int ny = SCR_HEIGHT;
-    int tx = 16;
-    int ty = 16;
-
-    dim3 blocks(nx / tx, ny / ty, 1);
-    dim3 threads(tx, ty, 1);
-
-    if (g_bFirstTime) {
-        g_bFirstTime = false;
-
-        Camera* d_camera_ptr;
-        checkCudaErrors(cudaMalloc((void**)&d_camera_ptr, sizeof(Camera)));
-        checkCudaErrors(cudaMemcpyToSymbol(g_camera_ptr, &d_camera_ptr, sizeof(Camera*)));
-
-        ViewPlane* d_viewplane_ptr;
-        checkCudaErrors(cudaMalloc((void**)&d_viewplane_ptr, sizeof(ViewPlane)));
-        checkCudaErrors(cudaMemcpyToSymbol(g_viewplane_ptr, &d_viewplane_ptr, sizeof(ViewPlane*)));
-
-        Light** d_light_ptr;
-        checkCudaErrors(cudaMalloc((void**)&d_light_ptr, sizeof(Light*)));
-        checkCudaErrors(cudaMemcpyToSymbol(g_lights, &d_light_ptr, sizeof(Light**)));
-
-        std::vector<Model*> models;
-        models.push_back(new Model("E:/repos/CUDA-RayTracer/models/venere_test.obj"));
-
-        int nmb_triangles;
-        std::vector<BVHPrimitiveInfo> triangle_info;
-        Triangle* d_triangles = loadModels(models, triangle_info, nmb_triangles);
-
-        std::cerr << "Building BVH with " << nmb_triangles << " primitives. ";
-        clock_t start, stop;
-        start = clock();
-
-        bvh = new BVHAccel(triangle_info, d_triangles, SplitMethod::SAH, 8);
-
-        stop = clock();
-        double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
-        std::cerr << "took " << timer_seconds << " seconds.\n\n";
-
-        update_camera << < 1, 1 >> > (cam_pos, cam_zoom, cam_lens_radius, cam_f, cam_d, cam_yaw, cam_pitch);
-        checkCudaErrors(cudaGetLastError());
-        checkCudaErrors(cudaDeviceSynchronize());
-
-        init_render << < 1, 1 >> > ();
-        checkCudaErrors(cudaGetLastError());
-        checkCudaErrors(cudaDeviceSynchronize());
-    }
-
-    render <<< blocks, threads >>> (d_vbo, accumulatebuffer, bvh->d_nodes, framenumber);
-
-    checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0));
-
-    cudaThreadSynchronize();
-
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // draw image from PBO
-    glDisable(GL_DEPTH_TEST);
-    glRasterPos2i(0, 0);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, vbo);
-    glDrawPixels(SCR_WIDTH, SCR_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glfwSetKeyCallback(window, glfw_key_callback);
+    glfwSetFramebufferSizeCallback(window, glfw_window_size_callback);
+    glfwSetCursorPosCallback(window, glfw_mouse_callback);
+    glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
+}
+void setup_imgui() {
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+    bool show_demo_window = true;
+    bool show_another_window = false;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+}
+void setup_cudainterop() {
+    // CUDA with GL interop
+    glGenBuffers(1, &pbo); // make & register PBO
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, 4 * sizeof(GLubyte) * SCR_WIDTH * SCR_HEIGHT, NULL, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
-    glutSwapBuffers();
-    glutReportErrors();
+    checkCudaErrors(cudaGraphicsGLRegisterBuffer(&cuda_pbo, pbo, cudaGraphicsRegisterFlagsWriteDiscard));
 }
 
-void wf_display(void)
+void setup_scene() 
 {
-    int nx = SCR_WIDTH;
-    int ny = SCR_HEIGHT;
-    int tx = 16;
-    int ty = 16;
-
-    dim3 blocks(nx / tx, ny / ty, 1);
-    dim3 threads(tx, ty, 1);
-
-    int blockSize = 16;
-    int gridSize = (pathCount + blockSize - 1) / blockSize;
-
-    if (buffer_reset) {
-        update_camera <<< 1, 1 >>> (cam_pos, cam_zoom, cam_lens_radius, cam_f, cam_d, cam_yaw, cam_pitch);
-        //clearPathsKernel <<< gridSize, blockSize >>> (paths, pathCount);
-        cudaMemset(accumulatebuffer, 1, SCR_WIDTH * SCR_HEIGHT * sizeof(float4));
-        framenumber = 0;
-    }
-
-    buffer_reset = false;
-    framenumber++;
-
-    // map PBO to get CUDA device pointer
-    checkCudaErrors(cudaGraphicsMapResources(1, &cuda_pbo_resource, 0));
-    size_t num_bytes;
-    checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_vbo, &num_bytes, cuda_pbo_resource));
-
-    if (g_bFirstTime) {
-        g_bFirstTime = false;
-
-        ViewPlane* d_viewplane_ptr;
-        checkCudaErrors(cudaMallocManaged(&d_viewplane_ptr, sizeof(ViewPlane)), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMemcpyToSymbol(g_viewplane_ptr, &d_viewplane_ptr, sizeof(ViewPlane*)));
-
-        Camera* d_camera_ptr;
-        checkCudaErrors(cudaMallocManaged(&d_camera_ptr, sizeof(Camera)), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMemcpyToSymbol(g_camera_ptr, &d_camera_ptr, sizeof(Camera*)));
-
-        Light** d_light_ptr;
-        checkCudaErrors(cudaMalloc((void**)&d_light_ptr, sizeof(Light*)));
-        checkCudaErrors(cudaMemcpyToSymbol(g_lights, &d_light_ptr, sizeof(Light**)));
-
-        checkCudaErrors(cudaMallocManaged(&paths, sizeof(Paths)), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->filmSamplePosition, sizeof(float2) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->throughput, sizeof(float3) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->result, sizeof(float3) * pathCount),      "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->length, sizeof(uint32_t) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->extensionRay, sizeof(Ray) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->extensionIntersection, sizeof(Isect) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->extensionBrdf, sizeof(float3) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->extensionBrdfPdf, sizeof(float) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->extensionCosine, sizeof(float) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->lightRay, sizeof(Ray) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->lightEmittance, sizeof(float3) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->lightBrdf, sizeof(float3) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->lightSamplePoint, sizeof(float3) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->lightBrdfPdf, sizeof(float) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->lightPdf, sizeof(float) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->lightCosine, sizeof(float) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&paths->lightRayBlocked, sizeof(bool) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&queues, sizeof(Queues)), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&queues->newPathQueue, sizeof(uint32_t) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&queues->diffuseMaterialQueue, sizeof(uint32_t) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&queues->extensionRayQueue, sizeof(uint32_t) * pathCount), "Could not allocate CUDA device memory");
-        checkCudaErrors(cudaMallocManaged(&queues->lightRayQueue, sizeof(uint32_t) * pathCount), "Could not allocate CUDA device memory");
-
-        std::vector<Model*> models;
-        models.push_back(new Model("E:/repos/CUDA-RayTracer/models/venere_test.obj"));
-
-        int nmb_triangles;
-        std::vector<BVHPrimitiveInfo> triangle_info;
-        Triangle* d_triangles = loadModels(models, triangle_info, nmb_triangles);
-
-        std::cerr << "Building BVH with " << nmb_triangles << " primitives. ";
-        clock_t start, stop;
-        start = clock();
-
-        bvh = new BVHAccel(triangle_info, d_triangles, SplitMethod::SAH, 8);
-
-        stop = clock();
-        double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
-        std::cerr << "took " << timer_seconds << " seconds.\n\n";
-        
-        update_camera <<< 1, 1 >>> (cam_pos, cam_zoom, cam_lens_radius, cam_f, cam_d, cam_yaw, cam_pitch);
-        checkCudaErrors(cudaGetLastError());
-        checkCudaErrors(cudaDeviceSynchronize());
-
-        init_render <<< 1, 1 >>> ();
-        checkCudaErrors(cudaGetLastError());
-        checkCudaErrors(cudaDeviceSynchronize());
-
-        wf_init <<< gridSize, blockSize >>> (paths, pathCount);
-        checkCudaErrors(cudaGetLastError());
-        checkCudaErrors(cudaDeviceSynchronize());
-    }
-
-    wf_logic <<< gridSize, blockSize >>> (paths, queues, d_vbo, accumulatebuffer, pathCount, maxPathLength, framenumber);
-    wf_generate <<< gridSize, blockSize >>> (paths, queues, pathCount, maxPathLength);
-    wf_shade << < gridSize, blockSize >> > (paths, queues);
-    wf_extend << < gridSize, blockSize >> > (paths, queues, bvh->d_nodes);
-    wf_shadow <<< gridSize, blockSize >>> (paths, queues, bvh->d_nodes);
-
-    //wf_drawbuff <<< gridSize, blockSize >>> (paths, d_vbo, accumulatebuffer, SCR_WIDTH * SCR_HEIGHT, framenumber);
-
-    checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0));
-
-    cudaThreadSynchronize();
-
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // draw image from PBO
-    glDisable(GL_DEPTH_TEST);
-    glRasterPos2i(0, 0);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, vbo);
-    glDrawPixels(SCR_WIDTH, SCR_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
-    glutSwapBuffers();
-    glutReportErrors();
-
-    queues->newPathQueueLength = 0;
-    queues->diffuseMaterialQueueLength = 0;
-    queues->extensionRayQueueLength = 0;
-    queues->lightRayQueueLength = 0;
-}
-
-void idle()
-{
-    glutPostRedisplay();
-}
-
-void reshape(int x, int y)
-{
-    glViewport(0, 0, x, y);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-}
-
-int lastX = 0, lastY = 0;
-int theButtonState = 0;
-int theModifierState = 0;
-
-// camera mouse controls in X and Y direction
-void motion(int x, int y)
-{
-    int deltaX = lastX - x;
-    int deltaY = lastY - y;
-
-    if (deltaX != 0 || deltaY != 0) {
-
-        if (theButtonState == GLUT_LEFT_BUTTON)  // Rotate
-        {
-            //interactiveCamera->changeYaw(deltaX * 0.01);
-            //interactiveCamera->changePitch(-deltaY * 0.01);
-            cam_yaw += deltaX * 0.001;
-            cam_yaw = fmod(cam_yaw, 2.f * M_PI);
-
-            cam_pitch += deltaY * 0.001;
-            //float padding = 0.05;
-            //cam_pitch = clamp2(cam_pitch, -M_2_PI + padding, M_2_PI - padding)
-
-        }
-        else if (theButtonState == GLUT_MIDDLE_BUTTON) // Zoom
-        {
-            //interactiveCamera->changeAltitude(-deltaY * 0.01);
-        }
-
-        if (theButtonState == GLUT_RIGHT_BUTTON) // camera move
-        {
-            //interactiveCamera->changeRadius(-deltaY * 0.01);
-        }
-
-        lastX = x;
-        lastY = y;
-        buffer_reset = true;
-        glutPostRedisplay();
-    }
-}
-
-void mouse(int button, int state, int x, int y)
-{
-    theButtonState = button;
-    theModifierState = glutGetModifiers();
-    lastX = x;
-    lastY = y;
-
-    motion(x, y);
-}
-
-void keyboard(unsigned char key, int x, int y)
-{
-    float3 front;
-    front.x = cos(cam_yaw) * cos(cam_pitch);
-    front.y = sin(cam_pitch);
-    front.z = sin(cam_yaw) * cos(cam_pitch);
-    cam_dir = normalize(front);
-
-    //direction = normalize(position - lookat);
-    cam_right = normalize(cross(cam_dir, cam_worldUp));
-    cam_up = normalize(cross(cam_right, cam_dir));
-    //lookat = position + direction;
-
-    switch (key)
-    {
-    case 27:
-#if defined (__APPLE__) || defined(MACOSX)
-        exit(EXIT_SUCCESS);
-#else
-        glutDestroyWindow(glutGetWindow());
-        return;
-#endif
-        break;
-
-    case 'w':
-        cam_pos += cam_dir * cam_movement_spd;
-        break;
-    case 's':
-        cam_pos -= cam_dir * cam_movement_spd;
-        break;
-    case 'a':
-        cam_pos -= cam_right * cam_movement_spd;
-        break;
-    case 'd':
-        cam_pos += cam_right * cam_movement_spd;
-        break;
-    case ' ':
-        cam_pos += cam_up * cam_movement_spd;
-        break;
-    case 16: // shift
-        cam_pos -= cam_up * cam_movement_spd;
-        break;
-    case 'q':
-        cam_lens_radius -= 0.1;
-        break;
-    case 'e':
-        cam_lens_radius += 0.1;
-        break;
-    case 'z':
-        cam_f -= 1;
-        break;
-    case 'c':
-        cam_f += 1;
-        break;
-    default:
-        break;
-    }
-    buffer_reset = true;
-    glutPostRedisplay();
-}
-
-int main(int argc, char** argv)
-{
-    checkCudaErrors(cudaThreadSetLimit(cudaLimitStackSize, 4096));
-    checkCudaErrors(cudaDeviceSetLimit(cudaLimitMallocHeapSize, 5000 * 100000 * sizeof(Triangle*)));
-    /*
-    int nx = SCR_WIDTH;
-    int ny = SCR_HEIGHT;
-    int tx = 16;
-    int ty = 16;
-
-    dim3 blocks(nx / tx, ny / ty, 1);
-    dim3 threads(tx, ty, 1);
-
-    Camera* d_camera_ptr;
-    checkCudaErrors(cudaMalloc((void**)&d_camera_ptr, sizeof(Camera)));
-    checkCudaErrors(cudaMemcpyToSymbol(g_camera_ptr, &d_camera_ptr, sizeof(Camera*)));
-
     ViewPlane* d_viewplane_ptr;
-    checkCudaErrors(cudaMalloc((void**)&d_viewplane_ptr, sizeof(ViewPlane)));
+    checkCudaErrors(cudaMallocManaged(&d_viewplane_ptr, sizeof(ViewPlane)), "Could not allocate CUDA device memory");
     checkCudaErrors(cudaMemcpyToSymbol(g_viewplane_ptr, &d_viewplane_ptr, sizeof(ViewPlane*)));
 
+    Camera* d_camera_ptr;
+    checkCudaErrors(cudaMallocManaged(&d_camera_ptr, sizeof(Camera)), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMemcpyToSymbol(g_camera_ptr, &d_camera_ptr, sizeof(Camera*)));
+
     Light** d_light_ptr;
-    checkCudaErrors(cudaMalloc((void**)&d_light_ptr, sizeof(Light*)));
+    checkCudaErrors(cudaMalloc((void**)&d_light_ptr, sizeof(Light*) * 5));
     checkCudaErrors(cudaMemcpyToSymbol(g_lights, &d_light_ptr, sizeof(Light**)));
 
     std::vector<Model*> models;
-    models.push_back(new Model("E:/repos/CUDA-RayTracer/models/sphere_test.obj"));
+    models.push_back(new Model("../kitchen_model/kitchen_small.obj"));
 
     int nmb_triangles;
     std::vector<BVHPrimitiveInfo> triangle_info;
@@ -962,97 +574,382 @@ int main(int argc, char** argv)
     clock_t start, stop;
     start = clock();
 
-    BVHAccel* bvh = new BVHAccel(triangle_info, d_triangles, SplitMethod::SAH, 8);
-    
+    bvh = new BVHAccel(triangle_info, d_triangles, SplitMethod::SAH, 8);
+
     stop = clock();
     double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
     std::cerr << "took " << timer_seconds << " seconds.\n\n";
 
+    update_camera <<< 1, 1 >>> (cam_pos, cam_zoom, cam_lens_radius, cam_f, cam_d, cam_exposure, cam_yaw, cam_pitch);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+
     init_render <<< 1, 1 >>> ();
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
-    */
+}
+void setup_paths() 
+{
+    checkCudaErrors(cudaMallocManaged(&paths, sizeof(Paths)), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->film_pos, sizeof(float2) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->throughput, sizeof(float3) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->length, sizeof(uint32_t) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->ext_ray, sizeof(Ray) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->ext_isect, sizeof(Isect) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->ext_brdf, sizeof(float3) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->ext_pdf, sizeof(float) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->ext_cosine, sizeof(float) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->ext_specular, sizeof(bool) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->light_ray, sizeof(Ray) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->light_id, sizeof(int) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->light_emittance, sizeof(float3) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->light_brdf, sizeof(float3) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->light_samplePoint, sizeof(float3) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->light_pdf, sizeof(float) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->light_cosine, sizeof(float) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&paths->light_inshadow, sizeof(bool) * PATHCOUNT), "Could not allocate CUDA device memory");
 
-    cudaMalloc(&accumulatebuffer, SCR_WIDTH * SCR_HEIGHT * sizeof(float4));
-
-    // OPENGL stuff //
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // 
-    // initialize GLUT callback functions
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-    glutInitWindowSize(SCR_WIDTH, SCR_HEIGHT);
-    glutCreateWindow("Path Tracer");
-    //glutDisplayFunc(display);
-    glutDisplayFunc(wf_display);
-
-    glewInit();
-    glutKeyboardFunc(keyboard);
-    glutMouseFunc(mouse);
-    glutMotionFunc(motion);
-    glutReshapeFunc(reshape);
-    glutIdleFunc(idle);
-
-    //if (!isGLVersionSupported(2,0) ||
-    //    !areGLExtensionsSupported("GL_ARB_pixel_buffer_object"))
-    //{
-    //    fprintf(stderr, "Required OpenGL extensions are missing.");
-     //   exit(EXIT_FAILURE);
-    //}
-    
-    // create pixel buffer object
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, vbo);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, SCR_WIDTH * SCR_HEIGHT * sizeof(GLubyte) * 4, 0, GL_STREAM_DRAW_ARB);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
-    // register this buffer object with CUDA
-    checkCudaErrors(cudaGraphicsGLRegisterBuffer(&cuda_pbo_resource, vbo, cudaGraphicsMapFlagsWriteDiscard));
-
-    glutMainLoop();
-
-    ////////////////////////////////////////////////////////////////////////////////
-    /*
-    int num_pixels = nx * ny;
-    size_t fb_size = num_pixels * sizeof(float3);
-
-    // allocate FB
-    float3* fb;
-    checkCudaErrors(cudaMallocManaged((void**)&fb, fb_size));
-
-    std::cerr << "Rendering a " << nx << "x" << ny << " image ";
-    std::cerr << "in " << tx << "x" << ty << " blocks. ";
-    start = clock();
-    // Render our buffer
-    render <<< blocks, threads >>> (fb, bvh->d_nodes);
-    //checkCudaErrors(cudaGetLastError());
+    wf_init <<< GRIDSIZE, BLOCKSIZE >>> (paths, PATHCOUNT);
+    checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+}
+void setup_queues() 
+{
+    checkCudaErrors(cudaMallocManaged(&queues, sizeof(Queues)), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&queues->queue_newPath, sizeof(uint32_t) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&queues->queue_mat_diffuse, sizeof(uint32_t) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&queues->queue_mat_cook, sizeof(uint32_t) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&queues->queue_mat_mix, sizeof(uint32_t) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&queues->queue_extension, sizeof(uint32_t) * PATHCOUNT), "Could not allocate CUDA device memory");
+    checkCudaErrors(cudaMallocManaged(&queues->queue_shadow, sizeof(uint32_t) * PATHCOUNT), "Could not allocate CUDA device memory");
+}
 
-    stop = clock();
-    timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
-    std::cerr << "took " << timer_seconds << " seconds.\n";
+void reset_buffer()
+{
+    if (buffer_reset) {
+        update_camera <<< 1, 1 >>> (cam_pos, cam_zoom, cam_lens_radius, cam_f, cam_d, cam_exposure, cam_yaw, cam_pitch);
+        //wf_init << < GRIDSIZE, BLOCKSIZE >> > (paths, PATHCOUNT);
+        //checkCudaErrors(cudaGetLastError());
+        //checkCudaErrors(cudaDeviceSynchronize());
+        cameraWasMoving = true;
+    }
 
-    uint8_t* data = new uint8_t[nx * ny * 3];
+    if (cameraWasMoving) {
+        cudaMemset(accumulatebuffer, 0, SCR_WIDTH * SCR_HEIGHT * sizeof(float4));
+        cudaMemset(n_samples, 0, SCR_WIDTH * SCR_HEIGHT * sizeof(int));
+        frame = 0;
+        clear_counter--;
+    }
 
-    // Output FB as Image
-    int index = 0;
+    if (clear_counter == 0) {
+        cameraWasMoving = false;
+        clear_counter = 15;
+    }
 
-    // Output FB as Image
-    for (int j = ny - 1; j >= 0; j--) {
-        for (int i = 0; i < nx; i++) {
-            size_t pixel_index = j * nx + i;
-            int ir = int(255.99 * fb[pixel_index].x);
-            int ig = int(255.99 * fb[pixel_index].y);
-            int ib = int(255.99 * fb[pixel_index].z);
+    buffer_reset = false;
+}
+void render_gui() {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
-            data[index++] = ir;
-            data[index++] = ig;
-            data[index++] = ib;
+    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+    if (show_demo_window)
+        ImGui::ShowDemoWindow(&show_demo_window);
+
+    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+    {
+        static float f = 0.0f;
+        static int counter = 0;
+        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+        ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+        ImGui::Checkbox("Another Window", &show_another_window);
+        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+            counter++;
+        ImGui::SameLine();
+        ImGui::Text("counter = %d", counter);
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
+    }
+
+    // 3. Show another simple window.
+    {
+        ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+        if (ImGui::TreeNode("Camera Settings"))
+        {
+            ImGui::Text("Focal Distance");
+            ImGui::DragFloat("##fd", &cam_f, 0.1f, 0.f, 1000.f, "%.2f");
+
+            if (ImGui::IsItemActive())
+                buffer_reset = true;
+
+            ImGui::Text("Apature Size");
+            ImGui::DragFloat("##lr", &cam_lens_radius, 0.1f, 0.001f, 100.f, "%.4f");
+
+            if (ImGui::IsItemActive())
+                buffer_reset = true;
+
+            ImGui::Text("Zoom");
+            ImGui::DragFloat("##zoom", &cam_zoom, 1.f, 1.f, 500.f, "%.2f");
+
+            if (ImGui::IsItemActive())
+                buffer_reset = true;
+
+            ImGui::Text("?");
+            ImGui::DragFloat("##?", &cam_d, 1.f, 1.f, 500.f, "%.2f");
+
+            if (ImGui::IsItemActive())
+                buffer_reset = true;
+
+            ImGui::Text("Exposure");
+            ImGui::DragFloat("##exposure", &cam_exposure, 0.01f, 0.1f, 5.f, "%.2f");
+
+            if (ImGui::IsItemActive())
+                buffer_reset = true;
+
+            ImGui::TreePop();
+        }
+        ImGui::End();
+    }
+
+    // Rendering
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+void render_kernel() 
+{
+    //clock_t start = clock();
+
+    checkCudaErrors(cudaGraphicsMapResources(1, &cuda_pbo, NULL));
+    checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_pbo, NULL, cuda_pbo));
+
+    wf_logic <<< GRIDSIZE, BLOCKSIZE >>> (paths, queues, d_pbo, accumulatebuffer, n_samples, PATHCOUNT, MAXPATHLENGTH, frame);
+    wf_generate <<< GRIDSIZE, BLOCKSIZE >>> (paths, queues, PATHCOUNT, MAXPATHLENGTH);
+    wf_mat_diffuse <<< GRIDSIZE, BLOCKSIZE >>> (paths, queues);
+    wf_mat_cook <<< GRIDSIZE, BLOCKSIZE >>> (paths, queues);
+    wf_mat_mix <<< GRIDSIZE, BLOCKSIZE >>> (paths, queues);
+    wf_extend <<< GRIDSIZE, BLOCKSIZE >>> (paths, queues);
+    wf_shadow <<< GRIDSIZE, BLOCKSIZE >>> (paths, queues);
+    //wf_extend << < GRIDSIZE, BLOCKSIZE >> > (paths, queues, triangles_SoA, nodes_SoA);
+    //wf_shadow << < GRIDSIZE, BLOCKSIZE >> > (paths, queues, triangles_SoA, nodes_SoA);
+
+    checkCudaErrors(cudaDeviceSynchronize());
+    checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_pbo, NULL));
+
+    //clock_t stop = clock();
+    //double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
+    //std::cerr << "took " << timer_seconds << " seconds.\n";
+}
+void reset_queues() 
+{
+    queues->queue_newPath_length = 0;
+    queues->queue_mat_diffuse_length = 0;
+    queues->queue_mat_cook_length = 0;
+    queues->queue_mat_mix_length = 0;
+    queues->queue_extension_length = 0;
+    queues->queue_shadow_length = 0;
+}
+
+void draw_buffer() 
+{
+    // bind the texture and PBO
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
+
+    // copy pixels from PBO to texture object
+    // Use offset instead of ponter.
+    //glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, IMAGE_WIDTH, IMAGE_HEIGHT, PIXEL_FORMAT, GL_UNSIGNED_BYTE, 0);
+
+    // bind PBO to update pixel values
+    //glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboIds[nextIndex]);
+
+    // map the buffer object into client's memory
+    // Note that glMapBuffer() causes sync issue.
+    // If GPU is working with this buffer, glMapBuffer() will wait(stall)
+    // for GPU to finish its job. To avoid waiting (stall), you can call
+    // first glBufferData() with NULL pointer before glMapBuffer().
+    // If you do that, the previous data in PBO will be discarded and
+    // glMapBuffer() returns a new allocated pointer immediately
+    // even if GPU is still working with the previous data.
+    //glBufferData(GL_PIXEL_UNPACK_BUFFER, DATA_SIZE, 0, GL_STREAM_DRAW);
+    //GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+    //if (ptr)
+    //{
+        // update data directly on the mapped buffer
+        //updatePixels(ptr, DATA_SIZE);
+        //glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);  // release pointer to mapping buffer
+    //}
+
+    glDrawPixels(SCR_WIDTH, SCR_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);   // THE MAGIC LINE #2
+
+    // clear buffer
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    /*
+    // save the initial ModelView matrix before modifying ModelView matrix
+    glPushMatrix();
+
+    // tramsform camera
+    glTranslatef(0, 0, -2.f);
+    glRotatef(0, 1, 0, 0);   // pitch
+    glRotatef(0, 0, 1, 0);   // heading
+
+    // draw a point with texture
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glColor4f(1, 1, 1, 1);
+    glBegin(GL_QUADS);
+    glNormal3f(0, 0, 1);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-1.0f, -1.0f, 0.0f);
+    glTexCoord2f(1.0f, 0.0f);   glVertex3f(1.0f, -1.0f, 0.0f);
+    glTexCoord2f(1.0f, 1.0f);   glVertex3f(1.0f, 1.0f, 0.0f);
+    glTexCoord2f(0.0f, 1.0f);   glVertex3f(-1.0f, 1.0f, 0.0f);
+    glEnd();
+
+    // unbind texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glPopMatrix();
+    */
+}
+
+static void glfw_window_size_callback(GLFWwindow* window, int width, int height)
+{
+    // get context
+    //struct pxl_interop* const interop = (pxl_interop*)glfwGetWindowUserPointer(window);
+
+    //pxl_interop_size_set(interop, width, height);
+}
+static void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+    lastX = xpos;
+    lastY = ypos;
+
+    if (mouseDown && !(ImGui::GetIO().WantCaptureMouse)) {
+        float MouseSensitivity = 0.001;
+
+        xoffset *= MouseSensitivity;
+        yoffset *= MouseSensitivity;
+
+        cam_yaw -= xoffset;
+        cam_pitch += yoffset;
+
+        // make sure that when pitch is out of bounds, screen doesn't get flipped
+        //if (constrainPitch)
+        //{
+        if (cam_pitch > 89.0f)
+            cam_pitch = 89.0f;
+        if (cam_pitch < -89.0f)
+            cam_pitch = -89.0f;
+        //}
+        buffer_reset = true;
+
+    }
+}
+void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            mouseDown = true;
+            click = true;
+        }
+        else if (action == GLFW_RELEASE) {
+            mouseDown = false;
         }
     }
-    checkCudaErrors(cudaFree(fb));
-    save_image("E:/repos/Firefly-master/images/out.png", data);
+    
+}
+static void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    float3 front;
+    front.x = cos(cam_yaw) * cos(cam_pitch);
+    front.y = sin(cam_pitch);
+    front.z = sin(cam_yaw) * cos(cam_pitch);
+    
+    cam_dir = normalize(front);
+    cam_right = normalize(cross(cam_dir, cam_worldUp));
+    cam_up = normalize(cross(cam_right, cam_dir));
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        cam_pos -= cam_dir * cam_movement_spd;
+    if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        cam_pos += cam_dir * cam_movement_spd;
+    if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        cam_pos -= cam_right * cam_movement_spd;
+    if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        cam_pos += cam_right * cam_movement_spd;
+    if (key == GLFW_KEY_Q && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        cam_pos += cam_up * cam_movement_spd;
+    if (key == GLFW_KEY_E && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        cam_pos -= cam_up * cam_movement_spd;
+    buffer_reset = true;
+}
+
+int main(int argc, char* argv[])
+{
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, 0);
+
+    checkCudaErrors(cudaThreadSetLimit(cudaLimitStackSize, 4096));
+    checkCudaErrors(cudaDeviceSetLimit(cudaLimitMallocHeapSize, 5000 * 100000 * sizeof(Triangle*)));
+
+    cudaMalloc(&accumulatebuffer, SCR_WIDTH * SCR_HEIGHT * sizeof(float4));
+    cudaMalloc(&n_samples, SCR_WIDTH * SCR_HEIGHT * sizeof(int));
+
+    /*
+    // init 2 texture objects
+    glGenTextures(1, &textureId);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, IMAGE_WIDTH, IMAGE_HEIGHT, 0, PIXEL_FORMAT, GL_UNSIGNED_BYTE, (GLvoid*)imageData);
+    glBindTexture(GL_TEXTURE_2D, 0);
     */
-    return 0;
+
+    setup_glfw();
+    setup_imgui();
+    setup_cudainterop();
+
+    setup_scene();
+    setup_paths();
+    setup_queues();
+
+    while (!glfwWindowShouldClose(window))
+    {
+        glClear(GL_COLOR_BUFFER_BIT);
+        reset_buffer();
+        frame++;
+
+        render_kernel();
+        draw_buffer();
+
+        render_gui();
+        reset_queues();
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    cudaDeviceReset();
+
+    // missing some clean up here
+    exit(EXIT_SUCCESS);
 }

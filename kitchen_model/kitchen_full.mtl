@@ -1,0 +1,296 @@
+# Blender MTL File: 'uploads_files_686121_Kitchen+sink+in+scene.blend'
+# Material Count: 34
+
+newmtl chrome_0
+Kd 0.700000 0.700000 0.700000
+Ks 1.000000 1.000000 1.000000
+d  0.950000
+Ni 0.010000
+Ns 1.000000
+illum 1
+
+newmtl chrome_1
+Kd 0.700000 0.700000 0.700000
+Ks 1.000000 1.000000 1.000000
+d  0.800000
+Ni 0.200000
+Ns 1.000000
+illum 1
+
+newmtl chrome_2
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  1.000000
+Ni 0.447214
+Ns 1.000000
+illum 1
+
+newmtl chrome_3
+Kd 0.450000 0.450000 0.450000
+Ks 1.000000 1.000000 1.000000
+d  0.950000
+Ni 0.447214
+Ns 1.000000
+illum 1
+
+newmtl chrome_4
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.950000
+Ni 0.447214
+Ns 1.000000
+illum 1
+
+newmtl aluminium
+Ks 0.960000 0.960000 0.970000
+d  1.000000
+Ni 0.100000
+Ns 1.000000
+illum 1
+
+newmtl diff_black_0
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 1.000000
+illum 2
+
+newmtl diff_red_0
+Kd 0.564706 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 1.000000
+illum 2
+
+newmtl diff_white_0
+Kd 0.498039 0.498039 0.498039
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 1.000000
+illum 2
+
+newmtl diff_white_1
+Kd 0.498039 0.498039 0.498039
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 1.000000
+illum 2
+
+newmtl dirt
+Kd 0.500000 0.500000 0.500000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 1.000000
+illum 2
+map_Kd textures\\plants\\brown_Ground.png
+
+newmtl fresmix_black_0
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.010000
+Ns 0.100000
+illum 1
+
+newmtl fresmix_white_0
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.010000
+Ns 0.240000
+illum 1
+
+newmtl fresmix_white_1
+Kd 0.277565 0.250068 0.191955
+Ks 0.500000 0.500000 0.500000
+d  0.000000
+Ni 0.800000
+Ns 0.310000
+illum 1
+
+newmtl fresmix_white_2
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.100000
+Ns 0.240000
+illum 1
+
+newmtl fresmix_rust_0
+Kd 0.213285 0.048803 0.009597
+Ks 0.511940 0.511940 0.511940
+d  0.000000
+Ni 0.643284
+Ns 0.512000
+illum 1
+
+newmtl granite
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 0.240000
+illum 1
+map_Kd textures\\granite\\Marble014_2K_Color.png
+map_Ks textures\\granite\\Marble014_2K_Roughness.png
+
+newmtl leaf_0
+Kd 0.500000 0.500000 0.500000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.540000
+Ns 1.000000
+illum 1
+map_Kd textures\\plants\\Diffenbachia_Leaf_01.png
+
+newmtl leaf_1
+Kd 0.500000 0.500000 0.500000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.540000
+Ns 1.000000
+illum 1
+map_Kd textures\\plants\\Diffenbachia_Leaf_03.png
+
+newmtl plastic_gray_0
+Kd 0.084314 0.084314 0.084314
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 0.240000
+illum 1
+
+newmtl plastic_red_0
+Kd 0.784314 0.005631 0.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.316228
+Ns 0.240000
+illum 1
+
+newmtl plastic_blue_0
+Kd 0.000000 0.235253 0.734314
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.316228
+Ns 0.240000
+illum 1
+
+newmtl tile
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 0.310000
+illum 1
+map_Kd textures\\tiles\\Tiles032_2K_Color.png
+map_Ks textures\\tiles\\Tiles032_2K_Roughness.png
+
+newmtl wood_floor
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 1.000000
+illum 1
+map_Kd textures\\wood\\WoodFloor040_2K_Color.png
+map_Ns textures\\wood\\WoodFloor040_2K_Roughness.png
+
+newmtl stove_top
+Ka 1.000000 1.000000 1.000000
+Kd 0.066667 0.066667 0.066667
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+d  0.000000
+Ni 0.010000
+Ns 1.000000
+illum 1
+map_Kd textures\\stovetop.png
+
+newmtl teapot
+Ka 1.000000 1.000000 1.000000
+Kd 0.841189 0.020562 0.007614
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+d  0.500000
+Ni 0.450000
+Ns 1.000000
+illum 1
+
+newmtl cuttingboard
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 1.000000
+illum 2
+map_Kd textures\\DSC_0256_.png
+
+newmtl knife
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 1.000000
+illum 1
+map_Kd textures\\Material_Base_Color.png
+map_Ks textures\\Material_Roughness.png
+refl textures\\Material_Metallic.png
+
+newmtl MetalPhong
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.471080
+Ni 1.000000
+Ns 0.602911
+illum 1
+map_Kd E:\\kitchen_model\\KITCHEN\\textures\\MetalBare0094_S.png
+
+newmtl PotBlinn
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 0.900000
+illum 1
+map_Kd E:\\kitchen_model\\KITCHEN\\textures\\PotTMap.png
+
+newmtl ScoopBlinn
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 1.000000
+Ns 0.889245
+illum 1
+map_Kd E:\\kitchen_model\\KITCHEN\\textures\\Leather.png
+
+newmtl bowl
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.010000
+Ns 0.310000
+illum 1
+map_Kd textures\\pine_tree1.png
+
+newmtl grinder
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+d  0.000000
+Ni 0.010000
+Ns 0.310000
+illum 1
+map_Kd textures\\AlderWood.png
+
+newmtl dragon
+Kd 1.000000 0.625213 0.043333
+Ks 1.000000 0.625213 0.043333
+d  1.000000
+Ni 0.010000
+Ns 1.000000
+illum 1

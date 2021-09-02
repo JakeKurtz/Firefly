@@ -35,7 +35,7 @@ public:
 		return (new _Rectangle(*this));
 	}
 
-	__device__ virtual bool hit(const Ray& ray, float& tmin, ShadeRec& sr) const
+	__device__ virtual bool hit(const Ray& ray, float& tmin, Isect& isect) const
 	{
 		float t = dot((point - ray.o), normal) / dot(ray.d, normal);
 
@@ -56,8 +56,10 @@ public:
 			return (false);
 
 		tmin = t;
-		sr.normal = normal;
-		sr.local_hit_point = p;
+		isect.distance = t;
+		isect.normal = normal;
+		isect.position = p;
+		isect.wasFound = true;
 
 		return (true);
 	};

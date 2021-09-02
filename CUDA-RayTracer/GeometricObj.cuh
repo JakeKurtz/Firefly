@@ -2,14 +2,14 @@
 #define _RAYTRACER_GEOMETRICOBJECTS_GEOMETRICOBJ_H_
 
 #include "ShadeRec.cuh"
-#include "Math.cuh"
+#include "Math.h"
 
 class GeometricObj {
 
 public:
 	__device__ virtual GeometricObj* clone(void) const = 0;
 
-	__device__ virtual bool hit(const Ray& ray, float& tmin, ShadeRec& sr) const = 0;
+	__device__ virtual bool hit(const Ray& ray, float& tmin, Isect& isect) const = 0;
 
 	__device__ virtual bool hit(const Ray& ray) const = 0;
 
@@ -50,7 +50,7 @@ public:
 		shadows = b;
 	};
 
-	__device__ virtual float pdf(const ShadeRec& sr)
+	__device__ virtual float pdf(const Isect& isect)
 	{
 		return inv_area;
 	};
@@ -59,9 +59,11 @@ public:
 
 	__device__ virtual ~GeometricObj() {};
 
+	Material* material_ptr;
+	MaterialIndex  materialIndex;
+
 protected:
 	float3				color;
-	mutable Material*	material_ptr;
 	bool				shadows = true;
 	bool				transformed = false;
 	float				inv_area;

@@ -123,19 +123,20 @@ struct LinearBVHNode {
 	uint8_t pad[1];        // ensure 32 byte total size
 };
 
-__global__ void reorder_primitives(Triangle triangles[], int ordered_prims[], int size) {
+__global__ void reorder_primitives(Triangle triangles[], int ordered_prims[], int size) 
+{
 	for (int i = 0; i < size; i++) {
 		int index = ordered_prims[i];
 		g_triangles[i] = triangles[index];
 	}
 }
 
-__device__ inline bool bounds_hit(float4 pMin, float4 pMax, const Ray& __restrict__ ray, const float3& __restrict__ invDir, const int dirIsNeg[3])
+__device__ inline bool bounds_hit(float3 pMin, float3 pMax, const Ray& __restrict ray, const float3& __restrict invDir, const int dirIsNeg[3])
 {
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 
 	tmin = (((dirIsNeg[0] == 0) ? pMin : pMax).x - ray.o.x) * invDir.x;
-	tmin = ((((1 - dirIsNeg[0]) == 0) ? pMin : pMax).x - ray.o.x) * invDir.x;
+	tmax = ((((1 - dirIsNeg[0]) == 0) ? pMin : pMax).x - ray.o.x) * invDir.x;
 
 	tymin = (((dirIsNeg[1] == 0) ? pMin : pMax).y - ray.o.y) * invDir.y;
 	tymax = ((((1 - dirIsNeg[1]) == 0) ? pMin : pMax).y - ray.o.y) * invDir.y;
@@ -149,149 +150,16 @@ __device__ inline bool bounds_hit(float4 pMin, float4 pMax, const Ray& __restric
 	return (tminbox <= tmaxbox);
 }
 
-/*
-__device__ void Intersect(const Ray& __restrict__ ray, ShadeRec& sr, const LinearBVHNode* __restrict__ nodes)
+__device__ void intersect(const Ray& __restrict ray, Isect& isect, Isect& isect_self)
 {
 	float		t;
+	int			triangle_id;
 	float3		normal;
+	float2		texcoord;
 	float3		local_hit_point;
 	float		tmin = K_HUGE;
 
-	float3 invDir = make_float3(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
-	int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z < 0 };
-
-	// Follow ray through BVH nodes to find primitive intersections //
-	int toVisitOffset = 0, currentNodeIndex = 0;
-	int nodesToVisit[64];
-	while (true) {
-
-		const float4 pMin = tex1Dfetch(t_BVHbounds, 2 * currentNodeIndex + 0);
-		const float4 pMax = tex1Dfetch(t_BVHbounds, 2 * currentNodeIndex + 1);
-		
-		//const LinearBVHNode node = nodes[currentNodeIndex];
-
-		// Check ray against BVH node //
-		if (bounds_hit(pMin, pMax, ray, invDir, dirIsNeg)) {
-
-			const int4 node = tex1Dfetch(t_BVHnodes, currentNodeIndex);
-
-			const int primitivesOffset = node.x;
-			const int secondChildOffset = node.y;
-			const int nPrimitives = node.z;
-			const int axis = node.w;
-
-			if (nPrimitives > 0) {
-				// Intersect ray with primitives in leaf BVH node //
-				for (int i = 0; i < nPrimitives; ++i) {
-					if (g_triangles[primitivesOffset + i].hit(ray, t, sr) && (t < tmin)) {
-						sr.hit_an_obj = true;
-						sr.material_ptr = g_triangles[primitivesOffset + i].material_ptr;
-						tmin = t;
-						normal = sr.normal;
-						local_hit_point = sr.local_hit_point;
-					}
-				}
-				if (toVisitOffset == 0) break;
-				currentNodeIndex = nodesToVisit[--toVisitOffset];
-			}
-			else {
-				// Put far BVH node on nodesToVisit stack, advance to near node //
-				if (dirIsNeg[axis]) {
-					nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
-					currentNodeIndex = secondChildOffset;
-				}
-				else {
-					nodesToVisit[toVisitOffset++] = secondChildOffset;
-					currentNodeIndex = currentNodeIndex + 1;
-				}
-			}
-		}
-		else {
-			if (toVisitOffset == 0) break;
-			currentNodeIndex = nodesToVisit[--toVisitOffset];
-		}
-	}
-
-	if (sr.hit_an_obj) {
-		sr.t = tmin;
-		sr.normal = normal;
-		sr.local_hit_point = local_hit_point;
-		sr.ray = ray;
-	}
-	
-}
-*/
-
-/*
-__device__ void Intersect(const Ray& __restrict__ ray, ShadeRec& sr, const LinearBVHNode* __restrict__ nodes)
-{
-	float		t;
-	float3		normal;
-	float3		local_hit_point;
-	float		tmin = K_HUGE;
-
-	float3 invDir = make_float3(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
-	int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z < 0 };
-
-	// Follow ray through BVH nodes to find primitive intersections //
-	int toVisitOffset = 0, currentNodeIndex = 0;
-	int nodesToVisit[64];
-	while (true) {
-
-		const LinearBVHNode node = nodes[currentNodeIndex];
-
-		// Check ray against BVH node //
-		if (node.bounds.hit(ray, invDir, dirIsNeg)) {
-			if (node.nPrimitives > 0) {
-				// Intersect ray with primitives in leaf BVH node //
-
-				for (int i = 0; i < node.nPrimitives; ++i) {
-					if (g_triangles[node.primitivesOffset + i].hit(ray, t, sr) && (t < tmin)) {
-						sr.hit_an_obj = true;
-						sr.material_ptr = g_triangles[node.primitivesOffset + i].material_ptr;
-						tmin = t;
-						normal = sr.normal;
-						local_hit_point = sr.local_hit_point;
-					}
-				}
-				if (toVisitOffset == 0) break;
-				currentNodeIndex = nodesToVisit[--toVisitOffset];
-			}
-			else {
-				// Put far BVH node on nodesToVisit stack, advance to near node //
-				if (dirIsNeg[node.axis]) {
-					nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
-					currentNodeIndex = node.secondChildOffset;
-				}
-				else {
-					nodesToVisit[toVisitOffset++] = node.secondChildOffset;
-					currentNodeIndex = currentNodeIndex + 1;
-				}
-			}
-		}
-		else {
-			if (toVisitOffset == 0) break;
-			currentNodeIndex = nodesToVisit[--toVisitOffset];
-		}
-	}
-
-	if (sr.hit_an_obj) {
-		sr.t = tmin;
-		sr.normal = normal;
-		sr.local_hit_point = local_hit_point;
-		sr.ray = ray;
-	}
-}
-*/
-
-__device__ void Intersect(const Ray& __restrict ray, ShadeRec& sr, const LinearBVHNode* __restrict nodes)
-{
-	float		t;
-	float3		normal;
-	float3		local_hit_point;
-	float		tmin = K_HUGE;
-
-	float3 invDir = make_float3(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
+	float3 invDir = make_float3(1.f / (float)ray.d.x, 1.f / (float)ray.d.y, 1.f / (float)ray.d.z);
 	int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z < 0 };
 
 	// Follow ray through BVH nodes to find primitive intersections //
@@ -301,86 +169,22 @@ __device__ void Intersect(const Ray& __restrict ray, ShadeRec& sr, const LinearB
 	bool searching = true;
 
 	while (true) {
-
-		const LinearBVHNode node = nodes[currentNodeIndex];
+		const LinearBVHNode* node = &g_nodes[currentNodeIndex];
 		searching = true;
 		// Check ray against BVH node //
-		if (node.bounds.hit(ray, invDir, dirIsNeg)) {
-			if (node.nPrimitives > 0) {
+		if (node->bounds.hit(ray, invDir, dirIsNeg)) {
+			if (node->nPrimitives > 0) {
 				searching = false;
 				if (!__any(searching)) {
 					// Intersect ray with primitives in leaf BVH node //
-					for (int i = 0; i < node.nPrimitives; ++i) {
-						if (g_triangles[node.primitivesOffset + i].hit(ray, t, sr) && (t < tmin)) {
-							sr.hit_an_obj = true;
-							sr.material_ptr = g_triangles[node.primitivesOffset + i].material_ptr;
-							tmin = t;
-							normal = sr.normal;
-							local_hit_point = sr.local_hit_point;
-						}
-					}
-				}
-				if (toVisitOffset == 0) break;
-				currentNodeIndex = nodesToVisit[--toVisitOffset];
-			}
-			else {
-				// Put far BVH node on nodesToVisit stack, advance to near node //
-				if (dirIsNeg[node.axis]) {
-					nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
-					currentNodeIndex = node.secondChildOffset;
-				}
-				else {
-					nodesToVisit[toVisitOffset++] = node.secondChildOffset;
-					currentNodeIndex = currentNodeIndex + 1;
-				}
-			}
-		}
-		else {
-			if (toVisitOffset == 0) break;
-			currentNodeIndex = nodesToVisit[--toVisitOffset];
-		}
-	}
-
-	if (sr.hit_an_obj) {
-		sr.t = tmin;
-		sr.normal = normal;
-		sr.local_hit_point = local_hit_point;
-		sr.ray = ray;
-		//sr.id = ray.id;
-	}
-}
-
-__device__ void Intersect(const Ray& __restrict ray, Isect& isect, const LinearBVHNode* __restrict nodes)
-{
-	float		t;
-	float3		normal;
-	float3		local_hit_point;
-	float		tmin = K_HUGE;
-
-	float3 invDir = make_float3(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
-	int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z < 0 };
-
-	// Follow ray through BVH nodes to find primitive intersections //
-	int toVisitOffset = 0, currentNodeIndex = 0;
-	int nodesToVisit[64];
-
-	bool searching = true;
-
-	while (true) {
-		const LinearBVHNode node = nodes[currentNodeIndex];
-		searching = true;
-		// Check ray against BVH node //
-		if (node.bounds.hit(ray, invDir, dirIsNeg)) {
-			if (node.nPrimitives > 0) {
-				searching = false;
-				if (!__any(searching)) {
-					// Intersect ray with primitives in leaf BVH node //
-					for (int i = 0; i < node.nPrimitives; ++i) {
-						if (g_triangles[node.primitivesOffset + i].hit(ray, t, isect) && (t < tmin)) {
+					for (int i = 0; i < node->nPrimitives; ++i) {
+						if (g_triangles[node->primitivesOffset + i].hit(ray, t, isect) && (t < tmin) && (node->primitivesOffset + i != isect_self.triangle_id)) {
 							isect.wasFound = true;
-							isect.materialIndex = 0;
+							triangle_id = node->primitivesOffset + i;
+							isect.material_ptr = g_triangles[node->primitivesOffset + i].material_ptr;
 							tmin = t;
 							normal = isect.normal;
+							texcoord = isect.texcoord;
 							local_hit_point = isect.position;
 						}
 					}
@@ -390,12 +194,12 @@ __device__ void Intersect(const Ray& __restrict ray, Isect& isect, const LinearB
 			}
 			else {
 				// Put far BVH node on nodesToVisit stack, advance to near node //
-				if (dirIsNeg[node.axis]) {
+				if (dirIsNeg[node->axis]) {
 					nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
-					currentNodeIndex = node.secondChildOffset;
+					currentNodeIndex = node->secondChildOffset;
 				}
 				else {
-					nodesToVisit[toVisitOffset++] = node.secondChildOffset;
+					nodesToVisit[toVisitOffset++] = node->secondChildOffset;
 					currentNodeIndex = currentNodeIndex + 1;
 				}
 			}
@@ -408,12 +212,14 @@ __device__ void Intersect(const Ray& __restrict ray, Isect& isect, const LinearB
 
 	if (isect.wasFound) {
 		isect.distance = tmin;
+		isect.triangle_id = triangle_id;
 		isect.normal = normal;
+		isect.texcoord = texcoord;
 		isect.position = local_hit_point;
 	}
 }
 
-__device__ bool shadow_hit(const Ray& __restrict__ ray, float& tmin, const LinearBVHNode* __restrict__ nodes)
+__device__ bool intersect_shadows(const Ray& __restrict ray, float& tmin)
 {
 	float		t;
 
@@ -424,13 +230,14 @@ __device__ bool shadow_hit(const Ray& __restrict__ ray, float& tmin, const Linea
 	int toVisitOffset = 0, currentNodeIndex = 0;
 	int nodesToVisit[64];
 	while (true) {
-		const LinearBVHNode* node = &nodes[currentNodeIndex];
+		const LinearBVHNode* node = &g_nodes[currentNodeIndex];
 		// Check ray against BVH node //
 		if (node->bounds.hit(ray, invDir, dirIsNeg)) {
 			if (node->nPrimitives > 0) {
 				// Intersect ray with primitives in leaf BVH node //
 				for (int i = 0; i < node->nPrimitives; ++i) {
 					if (g_triangles[node->primitivesOffset + i].shadow_hit(ray, t) && (t < tmin)) {
+						if (t < 0) printf("FUCK");
 						return (true);
 					}
 				}
@@ -469,15 +276,51 @@ public:
 		MemoryArena arena(1024 * 1024);
 
 		root = recursive_build(arena, primitiveInfo, 0, primitiveInfo.size(), &totalNodes, orderedPrims);
-
 		nodes = AllocAligned<LinearBVHNode>(totalNodes);
+
+		/*
+		h_pMin = (float3*)malloc(totalNodes * sizeof(float3));
+		h_pMax = (float3*)malloc(totalNodes * sizeof(float3));
+		h_primitivesOffset = (int*)malloc(totalNodes * sizeof(int));
+		h_secondChildOffset = (int*)malloc(totalNodes * sizeof(int));
+		h_nPrimitives = (uint16_t*)malloc(totalNodes * sizeof(uint16_t));
+		h_axis = (uint8_t*)malloc(totalNodes * sizeof(uint8_t));
+
+		checkCudaErrors(cudaMalloc(&nodes_SoA, sizeof(Nodes)));
+		checkCudaErrors(cudaMallocManaged((void**)&d_pMin, sizeof(float3) * totalNodes));
+		checkCudaErrors(cudaMallocManaged((void**)&d_pMax, sizeof(float3) * totalNodes));
+		checkCudaErrors(cudaMallocManaged((void**)&d_primitivesOffset, sizeof(int) * totalNodes));
+		checkCudaErrors(cudaMallocManaged((void**)&d_secondChildOffset, sizeof(int) * totalNodes));
+		checkCudaErrors(cudaMallocManaged((void**)&d_nPrimitives, sizeof(uint16_t) * totalNodes));
+		checkCudaErrors(cudaMallocManaged((void**)&d_axis, sizeof(uint8_t) * totalNodes));
+		*/
+
 		int offset = 0;
 		flattenBVHTree(root, &offset);
-		prepareBVHForGPU();
+
+		/*
+		// Copy data from host to device
+		checkCudaErrors(cudaMemcpy(d_pMin, h_pMin, sizeof(float3) * totalNodes, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(d_pMax, h_pMax, sizeof(float3) * totalNodes, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(d_primitivesOffset, h_primitivesOffset, sizeof(int) * totalNodes, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(d_secondChildOffset, h_secondChildOffset, sizeof(int) * totalNodes, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(d_nPrimitives, h_nPrimitives, sizeof(uint16_t) * totalNodes, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(d_axis, h_axis, sizeof(uint8_t) * totalNodes, cudaMemcpyHostToDevice));
+
+		// Binding pointers with dev_s
+		checkCudaErrors(cudaMemcpy(&nodes_SoA->pMin, &d_pMin, sizeof(nodes_SoA->pMin), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(&nodes_SoA->pMax, &d_pMax, sizeof(nodes_SoA->pMax), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(&nodes_SoA->primitivesOffset, &d_primitivesOffset, sizeof(nodes_SoA->primitivesOffset), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(&nodes_SoA->secondChildOffset, &d_secondChildOffset, sizeof(nodes_SoA->secondChildOffset), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(&nodes_SoA->nPrimitives, &d_nPrimitives, sizeof(nodes_SoA->nPrimitives), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(&nodes_SoA->axis, &d_axis, sizeof(nodes_SoA->axis), cudaMemcpyHostToDevice));
+		*/
+		//prepareBVHForGPU();
 
 		size_t node_size = sizeof(LinearBVHNode) * totalNodes;
 		checkCudaErrors(cudaMalloc((void**)&d_nodes, node_size));
 		checkCudaErrors(cudaMemcpy(d_nodes, nodes, node_size, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpyToSymbol(g_nodes, &d_nodes, sizeof(LinearBVHNode*)));
 
 		size_t orderedPrims_size = sizeof(int) * orderedPrims.size();
 		checkCudaErrors(cudaMalloc((void**)&d_orderedPrims, orderedPrims_size));
@@ -487,6 +330,18 @@ public:
 		checkCudaErrors(cudaMalloc((void**)&d_triangle_ptr, sizeof(Triangle)*orderedPrims.size()));
 		checkCudaErrors(cudaMemcpyToSymbol(g_triangles, &d_triangle_ptr, sizeof(Triangle*)));
 
+		/*
+		int triangleCount = orderedPrims.size();
+		
+		checkCudaErrors(cudaMallocManaged(&triangles_SoA, sizeof(Triangles)));
+		checkCudaErrors(cudaMallocManaged(&triangles_SoA->inv_area, sizeof(float) * triangleCount));
+		checkCudaErrors(cudaMallocManaged(&triangles_SoA->materialIndex, sizeof(MaterialIndex) * triangleCount));
+		checkCudaErrors(cudaMallocManaged(&triangles_SoA->material_ptr, sizeof(Material*) * triangleCount));
+		checkCudaErrors(cudaMallocManaged(&triangles_SoA->v0, sizeof(Vertex) * triangleCount));
+		checkCudaErrors(cudaMallocManaged(&triangles_SoA->v1, sizeof(Vertex) * triangleCount));
+		checkCudaErrors(cudaMallocManaged(&triangles_SoA->v2, sizeof(Vertex) * triangleCount));
+		checkCudaErrors(cudaMallocManaged(&triangles_SoA->face_normal, sizeof(float3) * triangleCount));
+		*/
 		reorder_primitives <<< 1, 1 >>> (d_triangles, d_orderedPrims, orderedPrims.size());
 	};
 
@@ -749,7 +604,7 @@ public:
 
 		// 3. Bind to texture
 		cudaChannelFormatDesc channel1desc = cudaCreateChannelDesc<float4>();
-		checkCudaErrors(cudaBindTexture(size_t(0), &t_BVHbounds, d_BVHbounds, &channel1desc, BVHbounds_size));
+		//checkCudaErrors(cudaBindTexture(size_t(0), &t_BVHbounds, d_BVHbounds, &channel1desc, BVHbounds_size));
 
 		// BVH Nodes
 		// int primitivesOffset;    4 bytes
@@ -775,13 +630,14 @@ public:
 
 		// 3. Bind to texture
 		cudaChannelFormatDesc channel2desc = cudaCreateChannelDesc<int4>();
-		checkCudaErrors(cudaBindTexture(size_t(0), &t_BVHnodes, d_BVHnodes, &channel2desc, BVHnodes_size));
+		//checkCudaErrors(cudaBindTexture(size_t(0), &t_BVHnodes, d_BVHnodes, &channel2desc, BVHnodes_size));
 	}
 
 	__host__ int flattenBVHTree(BVHBuildNode* node, int* offset) {
 		LinearBVHNode* linearNode = &nodes[*offset];
 		num_nodes++;
 		linearNode->bounds = node->bounds;
+
 		int myOffset = (*offset)++;
 		if (node->nPrimitives > 0)
 		{
@@ -793,8 +649,32 @@ public:
 			// Create interior flattened BVH node //
 			linearNode->axis = node->splitAxis;
 			linearNode->nPrimitives = 0;
+
 			flattenBVHTree(node->children[0], offset);
 			linearNode->secondChildOffset = flattenBVHTree(node->children[1], offset);
+		}
+		return myOffset;
+	}
+
+	__host__ int flattenBVHTree_SoA(BVHBuildNode* node, int* offset) {
+		int i = *offset;
+		h_pMin[i] = node->bounds.pMin;
+		h_pMax[i] = node->bounds.pMax;
+
+		int myOffset = (*offset)++;
+		if (node->nPrimitives > 0)
+		{
+			h_primitivesOffset[i] = node->firstPrimOffset;
+			h_nPrimitives[i] = node->nPrimitives;
+		}
+		else
+		{
+			// Create interior flattened BVH node //
+			h_axis[i] = node->splitAxis;
+			h_nPrimitives[i] = 0;
+
+			flattenBVHTree_SoA(node->children[0], offset);
+			h_secondChildOffset[i] = flattenBVHTree_SoA(node->children[1], offset);
 		}
 		return myOffset;
 	}
@@ -803,7 +683,6 @@ public:
 	const SplitMethod splitMethod;
 	BVHBuildNode* root;
 	LinearBVHNode* nodes = nullptr;
-	LinearBVHNode* d_nodes;
 	int* d_orderedPrims;
 	int num_nodes = 0;
 };

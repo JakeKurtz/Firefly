@@ -9,37 +9,29 @@ class Light {
 
 public:
 
-	__device__ virtual float3 get_direction(ShadeRec& sr) { return make_float3(0, 0, 0); };
+	__device__ virtual void get_direction(const Isect& isect, float3& wi, float3& sample_point) {  };
 
-	__device__ virtual void get_direction(ShadeRec& sr, float3& wi, float3& sample_point) {  };
+	__device__ virtual float3 L(const Isect& isect, float3 wi, float3 sample_point) { return make_float3(1, 1, 1); };
 
-	__device__ virtual void get_direction(Isect& isect, float3& wi, float3& sample_point) {  };
+	__device__ virtual float3 L(const Isect& isect) { return make_float3(1, 1, 1); };
 
-	__device__ virtual float3 L(ShadeRec& sr, float3 wi, float3 sample_point) { return make_float3(1, 1, 1); };
+	__device__ virtual bool in_shadow(const Ray& ray) const = 0;
 
-	__device__ virtual float3 L(Isect& isect, float3 wi, float3 sample_point) { return make_float3(1, 1, 1); };
-
-	__device__ virtual float3 L(ShadeRec& sr) { return make_float3(1, 1, 1); };
-
-	__device__ virtual bool in_shadow(const Ray& ray, const ShadeRec& sr) const = 0;
-
-	__device__ virtual bool in_shadow(const Ray& ray, LinearBVHNode* __restrict nodes) const = 0;
-
-	__device__ virtual bool visible(const Ray& ray, float& tmin, ShadeRec& sr) const = 0;
+	__device__ virtual bool visible(const Ray& ray, float& tmin, Isect& isect) const = 0;
 
 	__device__ virtual bool visible(const Ray& ray) const = 0;
 
-	__device__ virtual float G(const ShadeRec& sr) const
+	__device__ virtual float G(const Isect& isect) const
 	{
 		return 1.0f;
 	};
 
-	__device__ virtual float get_pdf(const ShadeRec& sr, const Ray& ray) const
+	__device__ virtual float get_pdf(const Isect& isect, const Ray& ray) const
 	{
 		return 1.0f;
 	};
 
-	__device__ virtual float get_pdf(const ShadeRec& sr) const
+	__device__ virtual float get_pdf(const Isect& isect) const
 	{
 		return 1.0f;
 	};
@@ -76,9 +68,10 @@ public:
 
 	__device__ virtual ~Light() {};
 
-protected:
 	float		ls;
 	float3		color;
+	Material* material_ptr;
+	MaterialIndex	materialIndex = MaterialIndex::Emissive;
 
 private:
 	bool shadows;

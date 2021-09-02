@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 #include "Ray.cuh"
-#include "Math.cuh"
+#include "Math.h"
 #include "ShadeRec.cuh"
 #include "BRDF.cuh"
 #include "Material.cuh"
@@ -19,16 +19,11 @@ struct Vertex {
 class Triangle
 {
 public:
-	float inv_area;
-	Material* material_ptr;
-
 	__device__ Triangle(void);
 
 	__device__ Triangle(const Vertex v0, const Vertex v1, const Vertex v2);
 
 	__device__ Triangle* clone(void) const;
-
-	__device__ bool hit(const Ray& ray, float& tmin, ShadeRec& sr) const;
 
 	__device__ bool hit(const Ray& ray, float& tmin, Isect& isect) const;
 
@@ -38,7 +33,8 @@ public:
 
 	__device__ float3 get_normal(const float3 p);
 
-private:
+	float inv_area;
+	Material* material_ptr;
 	Vertex v0, v1, v2;
 	float3 face_normal;
 };
@@ -70,41 +66,6 @@ __device__ Triangle* Triangle::clone(void) const
 	return (new Triangle(*this));
 }
 
-__device__ bool Triangle::hit(const Ray& ray, float& tmin, ShadeRec& sr) const
-{
-	float3 v0v1 = v1.Position - v0.Position;
-	float3 v0v2 = v2.Position - v0.Position;
-	float3 pvec = cross(ray.d, v0v2);
-	float det = dot(v0v1, pvec);
-
-	// if the determinant is negative the triangle is backfacing
-	// if the determinant is close to 0, the ray misses the triangle
-	if (det < K_EPSILON) return false;
-
-	// ray and triangle are parallel if det is close to 0
-	if (fabs(det) < K_EPSILON) return false;
-
-	float invDet = 1 / det;
-
-	float3 tvec = ray.o - v0.Position;
-	float u = dot(tvec, pvec) * invDet;
-	if (u < 0 || u > 1) return false;
-
-	float3 qvec = cross(tvec, v0v1);
-	float v = dot(ray.d, qvec) * invDet;
-	if (v < 0 || u + v > 1) return false;
-
-	float t = dot(v0v2, qvec) * invDet;
-
-	float3 normal = u * v1.Normal + v * v2.Normal + (1 - u - v) * v0.Normal;
-
-	tmin = t;
-	sr.normal = normal;
-	sr.local_hit_point = ray.o + t * ray.d;
-
-	return true;
-};
-
 __device__ bool Triangle::hit(const Ray& ray) const
 {
 	float3 v0v1 = v1.Position - v0.Position;
@@ -117,9 +78,9 @@ __device__ bool Triangle::hit(const Ray& ray) const
 	if (det < K_EPSILON) return false;
 
 	// ray and triangle are parallel if det is close to 0
-	if (fabs(det) < K_EPSILON) return false;
+	//if (fabs(det) < K_EPSILON) return false;
 
-	float invDet = 1 / det;
+	float invDet = 1.f / (float)det;
 
 	float3 tvec = ray.o - v0.Position;
 	float u = dot(tvec, pvec) * invDet;
@@ -137,32 +98,37 @@ __device__ bool Triangle::hit(const Ray& ray, float& tmin, Isect& isect) const
 	float3 v0v1 = v1.Position - v0.Position;
 	float3 v0v2 = v2.Position - v0.Position;
 	float3 pvec = cross(ray.d, v0v2);
-	float det = dot(v0v1, pvec);
+	double det = dot(v0v1, pvec);
 
 	// if the determinant is negative the triangle is backfacing
 	// if the determinant is close to 0, the ray misses the triangle
 	if (det < K_EPSILON) return false;
 
 	// ray and triangle are parallel if det is close to 0
-	if (fabs(det) < K_EPSILON) return false;
+	//if (fabs(det) < K_EPSILON) return false;
 
-	float invDet = 1 / det;
+	double invDet = 1 / det;
 
 	float3 tvec = ray.o - v0.Position;
-	float u = dot(tvec, pvec) * invDet;
+	double u = dot(tvec, pvec) * invDet;
 	if (u < 0 || u > 1) return false;
 
 	float3 qvec = cross(tvec, v0v1);
-	float v = dot(ray.d, qvec) * invDet;
+	double v = dot(ray.d, qvec) * invDet;
 	if (v < 0 || u + v > 1) return false;
 
-	float t = dot(v0v2, qvec) * invDet;
+	double t = dot(v0v2, qvec) * invDet;
+
+	if (t < 0)
+		return false;
 
 	float3 normal = u * v1.Normal + v * v2.Normal + (1 - u - v) * v0.Normal;
+	float2 texcoord = u * v1.TexCoords + v * v2.TexCoords + (1 - u - v) * v0.TexCoords;
 
 	tmin = t;
 
 	isect.normal = normal;
+	isect.texcoord = texcoord;
 	isect.position = ray.o + t * ray.d;
 
 	return true;
@@ -183,7 +149,7 @@ __device__ bool Triangle::shadow_hit(const Ray& ray, float& tmin) const
 	if (det < K_EPSILON) return false;
 
 	// ray and triangle are parallel if det is close to 0
-	if (fabs(det) < K_EPSILON) return false;
+	//if (fabs(det) < K_EPSILON) return false;
 
 	float invDet = 1 / det;
 
@@ -195,8 +161,12 @@ __device__ bool Triangle::shadow_hit(const Ray& ray, float& tmin) const
 	float v = dot(ray.d, qvec) * invDet;
 	if (v < 0 || u + v > 1) return false;
 
-	tmin = dot(v0v2, qvec) * invDet;
+	double t = dot(v0v2, qvec) * invDet;
 
+	if (t < 0)
+		return false;
+
+	tmin = t;
 	return true;
 };
 

@@ -36,6 +36,30 @@ public:
         up = normalize(cross(right, direction));
         lookat = position + direction;
     };
+
+    __device__ void process_mouse_movement(float xoffset, float yoffset, bool constrainPitch = true)
+    {
+        float MouseSensitivity = 0.01;
+
+        xoffset *= MouseSensitivity;
+        yoffset *= MouseSensitivity;
+
+        yaw += xoffset;
+        pitch += yoffset;
+
+        // make sure that when pitch is out of bounds, screen doesn't get flipped
+        if (constrainPitch)
+        {
+            if (pitch > 89.0f)
+                pitch = 89.0f;
+            if (pitch < -89.0f)
+                pitch = -89.0f;
+        }
+
+        // update Front, Right and Up Vectors using the updated Euler angles
+        update_camera_vectors();
+    }
+
     __device__ float3 ray_direction(const float2& pixel_point, const float2& lens_point) {
         float2 p;
         p.x = pixel_point.x * (float)f / (float)d;
