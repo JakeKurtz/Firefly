@@ -1,43 +1,48 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include <string>
-#include <vector>
-#include "Triangle.cuh"
-#include "CudaHelpers.cuh"
+#include "GLCommon.h"
 
-using namespace std;
+#include "Shader.h"
+#include "Texture.h"
+#include "Material.h"
+
+#include <vector>
+
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 texCoords;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
+};
 
 class Mesh {
 public:
-    vector<Vertex>          vertices;
-    vector<unsigned int>    indices;
-    vector<int>             texture_ids;
-    Material*                material;
+    Mesh();
+    Mesh(std::string name, std::vector<Vertex> vertices, std::vector<unsigned int> indices, Material* material);
 
-    Vertex* d_vertices;
-    unsigned int* d_indices;
+    void draw(Shader& shader);
 
-    Mesh(vector<Vertex> vertices, vector<unsigned int> indices, Material* material)
-    {
-        this->vertices = vertices;
-        this->indices = indices;
-        this->material = material;
-
-        //setup_mesh();
-    }
+    std::vector<Vertex> get_vertices();
+    std::vector<unsigned int> get_indices();
+    Material* get_material();
+    std::string get_name();
+    int get_nmb_of_triangles();
 
 private:
+    // mesh Data
+    std::string name = "null";
+    std::vector<Vertex> vertices;
+    std::vector<unsigned int> indices;
+    Material* material;
+    unsigned int VAO;
 
-    void setup_mesh()
-    {
-        size_t sizeof_vertices = sizeof(Vertex) * vertices.size();
-        checkCudaErrors(cudaMalloc((void**)&d_vertices, sizeof_vertices));
-        checkCudaErrors(cudaMemcpy(d_vertices, vertices.data(), sizeof_vertices, cudaMemcpyHostToDevice));
+    // render data 
+    unsigned int VBO, EBO;
+    int nmb_triangles = 0;
 
-        size_t sizeof_indices = sizeof(unsigned int) * indices.size();
-        checkCudaErrors(cudaMalloc((void**)&d_indices, sizeof_indices));
-        checkCudaErrors(cudaMemcpy(d_indices, indices.data(), sizeof_indices, cudaMemcpyHostToDevice));
-    }
+    // initializes all the buffer objects/arrays
+    void setup();
 };
 #endif

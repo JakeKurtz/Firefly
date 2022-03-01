@@ -1,0 +1,274 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="imgui">
+      <UniqueIdentifier>{95b844ae-39b7-4684-a1dc-1016be63f4ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rasterizer">
+      <UniqueIdentifier>{d56fe0c6-b949-48da-8275-e9ea8e2030de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pathtracer">
+      <UniqueIdentifier>{546a761a-43b2-4c75-b089-153b5f423d85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rasterizer\Scene">
+      <UniqueIdentifier>{56d7ce3a-3b79-4cc6-b3a7-acb37fe27a8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rasterizer\Rendering">
+      <UniqueIdentifier>{8bf467ca-205d-452f-8232-698d6deea997}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rasterizer\Texture">
+      <UniqueIdentifier>{54dc38b9-dc27-4c50-ae27-a961f0e13b5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rasterizer\Scene\Lights">
+      <UniqueIdentifier>{381f8091-1b23-4e35-91b5-227dadfc9136}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rasterizer\Scene\Cameras">
+      <UniqueIdentifier>{30abf41a-4f48-42b0-b0da-7372f12c817c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pathtracer\Scene">
+      <UniqueIdentifier>{318d6e74-7677-47b2-a05b-4ed7ef96b5d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pathtracer\Rendering">
+      <UniqueIdentifier>{2e0197b4-6221-4f7b-a6da-cfaeb3be0ca2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pathtracer\Math">
+      <UniqueIdentifier>{0a1abba9-f72c-4d6b-b1d9-b6e5b71b9d37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pathtracer\Acceleration">
+      <UniqueIdentifier>{a70ff664-4467-4d47-acf6-d29ea64037e6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\imgui\imgui_demo.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_draw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_impl_glfw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_impl_opengl3.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_widgets.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="CudaHelpers.cpp">
+      <Filter>pathtracer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>rasterizer\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureArray.cpp">
+      <Filter>rasterizer\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="CubeMap.cpp">
+      <Filter>rasterizer\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Attachment.cpp">
+      <Filter>rasterizer\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="PerspectiveCamera.cpp">
+      <Filter>rasterizer\Scene\Cameras</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLight.cpp">
+      <Filter>rasterizer\Scene\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectionalLight.cpp">
+      <Filter>rasterizer\Scene\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="EnvironmentLight.cpp">
+      <Filter>rasterizer\Scene\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameBuffer.cpp">
+      <Filter>rasterizer\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>rasterizer\Scene\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="Rasterizer.cpp">
+      <Filter>rasterizer\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>rasterizer\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry.cpp">
+      <Filter>rasterizer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>rasterizer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>rasterizer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>rasterizer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>rasterizer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>rasterizer\Scene\Cameras</Filter>
+    </ClCompile>
+    <ClCompile Include="BVH.cpp">
+      <Filter>pathtracer\Acceleration</Filter>
+    </ClCompile>
+    <ClCompile Include="dScene.cpp">
+      <Filter>pathtracer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Interop.cpp">
+      <Filter>pathtracer\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="PathTracer.cpp">
+      <Filter>pathtracer\Rendering</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CudaHelpers.h">
+      <Filter>pathtracer</Filter>
+    </ClInclude>
+    <ClInclude Include="kernel.cuh">
+      <Filter>pathtracer</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureArray.h">
+      <Filter>rasterizer\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>rasterizer\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="CubeMap.h">
+      <Filter>rasterizer\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Attachment.h">
+      <Filter>rasterizer\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="PerspectiveCamera.h">
+      <Filter>rasterizer\Scene\Cameras</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLight.h">
+      <Filter>rasterizer\Scene\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionalLight.h">
+      <Filter>rasterizer\Scene\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="EnvironmentLight.h">
+      <Filter>rasterizer\Scene\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameBuffer.h">
+      <Filter>rasterizer\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>rasterizer\Scene\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="Rasterizer.h">
+      <Filter>rasterizer\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>rasterizer\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>rasterizer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry.h">
+      <Filter>rasterizer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>rasterizer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>rasterizer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>rasterizer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>rasterizer\Scene\Cameras</Filter>
+    </ClInclude>
+    <ClInclude Include="Bounds3f.h">
+      <Filter>pathtracer\Acceleration</Filter>
+    </ClInclude>
+    <ClInclude Include="BVH.h">
+      <Filter>pathtracer\Acceleration</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryArena.h">
+      <Filter>pathtracer\Acceleration</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory.h">
+      <Filter>pathtracer\Acceleration</Filter>
+    </ClInclude>
+    <ClInclude Include="dMatrix.cuh">
+      <Filter>pathtracer\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="dMath.cuh">
+      <Filter>pathtracer\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="dRandom.cuh">
+      <Filter>pathtracer\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="dCamera.cuh">
+      <Filter>pathtracer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="dFilm.cuh">
+      <Filter>pathtracer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="dMaterial.cuh">
+      <Filter>pathtracer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="dScene.h">
+      <Filter>pathtracer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="dTriangle.cuh">
+      <Filter>pathtracer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="dVertex.cuh">
+      <Filter>pathtracer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="dRay.cuh">
+      <Filter>pathtracer\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Interop.h">
+      <Filter>pathtracer\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Isect.cuh">
+      <Filter>pathtracer\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="PathTracer.h">
+      <Filter>pathtracer\Rendering</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu">
+      <Filter>pathtracer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dMatrix.cu">
+      <Filter>pathtracer\Math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dRandom.cu">
+      <Filter>pathtracer\Math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dCamera.cu">
+      <Filter>pathtracer\Scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dFilm.cu">
+      <Filter>pathtracer\Scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dMaterial.cu">
+      <Filter>pathtracer\Scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dTriangle.cu">
+      <Filter>pathtracer\Scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dRay.cu">
+      <Filter>pathtracer\Rendering</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="imgui.ini">
+      <Filter>imgui</Filter>
+    </None>
+  </ItemGroup>
+</Project>

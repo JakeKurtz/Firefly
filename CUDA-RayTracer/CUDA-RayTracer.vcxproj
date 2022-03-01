@@ -11,50 +11,93 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AreaLight.cuh" />
-    <ClInclude Include="Bounds3f.cuh" />
-    <ClInclude Include="BRDF.cuh" />
-    <ClInclude Include="BVH.cuh" />
-    <ClInclude Include="Camera.cuh" />
-    <ClInclude Include="CudaHelpers.cuh" />
-    <ClInclude Include="cudaTexture.cuh" />
-    <ClInclude Include="cutil_math.h" />
-    <ClInclude Include="Emissive.cuh" />
-    <ClInclude Include="GeometricObj.cuh" />
-    <ClInclude Include="imgui_impl_glfw.h" />
-    <ClInclude Include="imgui_impl_glut.h" />
-    <ClInclude Include="imgui_impl_opengl2.h" />
-    <ClInclude Include="imgui_impl_opengl3.h" />
+    <ClCompile Include="..\imgui\imgui.cpp" />
+    <ClCompile Include="..\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Attachment.cpp" />
+    <ClCompile Include="BVH.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CubeMap.cpp" />
+    <ClCompile Include="CudaHelpers.cpp" />
+    <ClCompile Include="DirectionalLight.cpp" />
+    <ClCompile Include="dScene.cpp" />
+    <ClCompile Include="EnvironmentLight.cpp" />
+    <ClCompile Include="FrameBuffer.cpp" />
+    <ClCompile Include="Geometry.cpp" />
+    <ClCompile Include="globals.cpp" />
+    <ClCompile Include="Interop.cpp" />
+    <ClCompile Include="Light.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="massert.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="PathTracer.cpp" />
+    <ClCompile Include="PerspectiveCamera.cpp" />
+    <ClCompile Include="PointLight.cpp" />
+    <ClCompile Include="Rasterizer.cpp" />
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureArray.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Attachment.h" />
+    <ClInclude Include="Bounds3f.h" />
+    <ClInclude Include="BVH.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="CubeMap.h" />
+    <ClInclude Include="CudaHelpers.h" />
+    <ClInclude Include="dCamera.cuh" />
+    <ClInclude Include="dFilm.cuh" />
+    <ClInclude Include="DirectionalLight.h" />
+    <ClInclude Include="dMaterial.cuh" />
+    <ClInclude Include="dMath.cuh" />
+    <ClInclude Include="dMatrix.cuh" />
+    <ClInclude Include="dRandom.cuh" />
+    <ClInclude Include="dRay.cuh" />
+    <ClInclude Include="dScene.h" />
+    <ClInclude Include="dTriangle.cuh" />
+    <ClInclude Include="dVertex.cuh" />
+    <ClInclude Include="EnvironmentLight.h" />
+    <ClInclude Include="FrameBuffer.h" />
+    <ClInclude Include="Geometry.h" />
+    <ClInclude Include="GLCommon.h" />
+    <ClInclude Include="globals.h" />
+    <ClInclude Include="Interop.h" />
+    <ClInclude Include="Isect.cuh" />
     <ClInclude Include="kernel.cuh" />
-    <ClInclude Include="Light.cuh" />
-    <ClInclude Include="Material.cuh" />
-    <ClInclude Include="Math.h" />
+    <ClInclude Include="Light.h" />
+    <ClInclude Include="massert.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="MemoryArena.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
-    <ClInclude Include="Random.cuh" />
-    <ClInclude Include="Ray.cuh" />
-    <ClInclude Include="Rectangle.cuh" />
-    <ClInclude Include="ShadeRec.cuh" />
-    <ClInclude Include="Sphere.cuh" />
-    <ClInclude Include="Texture.cuh" />
-    <ClInclude Include="Triangle.cuh" />
-    <ClInclude Include="ViewPlane.cuh" />
-    <ClInclude Include="wavefront.h" />
+    <ClInclude Include="PathTracer.h" />
+    <ClInclude Include="PerspectiveCamera.h" />
+    <ClInclude Include="PointLight.h" />
+    <ClInclude Include="Rasterizer.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureArray.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="dCamera.cu" />
+    <CudaCompile Include="dFilm.cu" />
+    <CudaCompile Include="dMaterial.cu" />
+    <CudaCompile Include="dMatrix.cu" />
+    <CudaCompile Include="dRandom.cu" />
+    <CudaCompile Include="dRay.cu" />
+    <CudaCompile Include="dTriangle.cu" />
+    <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="imgui_impl_glfw.cpp" />
-    <ClCompile Include="imgui_impl_glut.cpp" />
-    <ClCompile Include="imgui_impl_opengl2.cpp" />
-    <ClCompile Include="imgui_impl_opengl3.cpp" />
-    <ClCompile Include="InfiniteAreaLight.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{63904427-B4E6-4E0C-9AC5-11D68762DA18}</ProjectGuid>
@@ -91,20 +134,21 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN64;STB_IMAGE_IMPLEMENTATION;GLFW_INCLUDE_NONE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <GenerateRelocatableDeviceCode>false</GenerateRelocatableDeviceCode>
-      <GPUDebugInfo>false</GPUDebugInfo>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <GPUDebugInfo>true</GPUDebugInfo>
       <GenerateLineInfo>false</GenerateLineInfo>
-      <Include>%(AdditionalLibraryDirectories)</Include>
+      <Include>%(AdditionalLibraryDirectories);$(ProjectDir)..\imgui</Include>
     </CudaCompile>
     <CudaLink />
     <CudaLink>
@@ -117,22 +161,23 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN64;STB_IMAGE_IMPLEMENTATION;GLFW_INCLUDE_NONE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;assimp-vc142-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <GenerateRelocatableDeviceCode>false</GenerateRelocatableDeviceCode>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <GPUDebugInfo>false</GPUDebugInfo>
       <GenerateLineInfo>false</GenerateLineInfo>
-      <Include>%(AdditionalLibraryDirectories)</Include>
+      <Include>%(AdditionalLibraryDirectories);$(ProjectDir)..\imgui</Include>
     </CudaCompile>
     <CudaLink />
     <CudaLink>
