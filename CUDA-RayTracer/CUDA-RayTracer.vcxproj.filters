@@ -37,6 +37,12 @@
     <Filter Include="pathtracer\Acceleration">
       <UniqueIdentifier>{a70ff664-4467-4d47-acf6-d29ea64037e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pathtracer\Lights">
+      <UniqueIdentifier>{e91ce54a-8e8a-4ce8-9024-a45d72784420}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pathtracer\Geometry">
+      <UniqueIdentifier>{6feac0ab-a620-4bc1-a168-c590b438048f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\imgui\imgui_demo.cpp">
@@ -239,6 +245,21 @@
     <ClInclude Include="PathTracer.h">
       <Filter>pathtracer\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="dLight.cuh">
+      <Filter>pathtracer\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="dAreaLight.cuh">
+      <Filter>pathtracer\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometricObj.cuh">
+      <Filter>pathtracer\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Rectangle.cuh">
+      <Filter>pathtracer\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="dDirectionalLight.cuh">
+      <Filter>pathtracer\Lights</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu">
@@ -264,6 +285,18 @@
     </CudaCompile>
     <CudaCompile Include="dRay.cu">
       <Filter>pathtracer\Rendering</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dLight.cu">
+      <Filter>pathtracer\Lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dAreaLight.cu">
+      <Filter>pathtracer\Lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="GeometricObj.cu">
+      <Filter>pathtracer\Geometry</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dDirectionalLight.cu">
+      <Filter>pathtracer\Lights</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

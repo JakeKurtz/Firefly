@@ -35,6 +35,7 @@ public:
 	void bind_environment_textures(Shader& shader);
 
 	int get_nmb_of_triangles();
+	vector<DirectionalLight*> get_lights();
 
 private:
 	void load_model(vector<Mesh*>& meshes, aiMatrix4x4 model_mat, aiNode* node, const aiScene* scene);

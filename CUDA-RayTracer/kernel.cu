@@ -4,6 +4,7 @@
 #include "dFilm.cuh"
 #include "dCamera.cuh"
 #include "BVH.h"
+#include "dDirectionalLight.cuh"
 
 #include <surface_functions.h>
 #include "dScene.h"
@@ -21,6 +22,20 @@ union pxl_rgbx_24
         unsigned  na : 8;
     };
 };
+
+__global__
+void d_add_directional_lights(float3 dir[], dMaterial* materials[], int size, dLight** lights)
+{
+    for (int i = 0; i < size; i ++) {
+        lights[i] = new dDirectionalLight(dir[i]);
+
+        //new (&lights[i]) dDirectionalLight(dir[i]);
+        lights[i]->material = materials[i];
+
+        //float3 dir = lights[i]->get_direction();
+        //printf("dir:\t%f, %f, %f\n\n", dir.x, dir.y, dir.z);
+    }
+}
 
 __global__
 void d_process_mesh(dVertex vertices[], unsigned int indicies[], dMaterial* materials[], int mat_index, int offset, int size, dTriangle* triangles)
@@ -58,8 +73,9 @@ void debug_kernel(
     dFilm* film,
     dCamera* camera,
     LinearBVHNode nodes[],
-    dTriangle triangles[]
-    //dLight* lights[]
+    dTriangle triangles[],
+    dLight* lights[],
+    int nmb_lights
 )
 {
     uint32_t id = threadIdx.x + blockIdx.x * blockDim.x;
@@ -75,16 +91,18 @@ void debug_kernel(
     float3 color = make_float3(0.f);
 
     if (isect.wasFound) {
-        float3 lightdir = make_float3(0.001, 0.98, 0.001);// , sample_point;
-        //lights[0]->get_direction(isect, lightdir, sample_point);
+        for (int i = 0; i < nmb_lights; i++) {
+            float3 lightdir, sample_point;
+            lights[i]->get_direction(isect, lightdir, sample_point);
 
-        dRay shadow_ray = dRay(isect.position + isect.normal * 0.001, lightdir);
+            dRay shadow_ray = dRay(isect.position + isect.normal * 0.001, lightdir);
 
-        //if (!lights[0]->in_shadow(shadow_ray)) {
-            float diff = fmaxf(dot(isect.normal, lightdir), 0.f);
-            color = (isect.material->baseColorFactor * diff * 1.f) * fmaxf(0.f, dot(isect.normal, lightdir)) * 50.f;// *lights[0]->material_ptr->radiance;
-            //color = isect.normal * fmaxf(0.f, dot(isect.normal, lightdir));
-        //}
+            if (!lights[i]->in_shadow(nodes, triangles, shadow_ray)) {
+                float diff = fmaxf(dot(isect.normal, lightdir), 0.f);
+                color += (isect.material->baseColorFactor * diff * 1.f) * fmaxf(0.f, dot(isect.normal, lightdir)) * lights[i]->L(isect);
+                //color = isect.normal * fmaxf(0.f, dot(isect.normal, lightdir));
+            }
+        } 
     }
 
     color *= camera->exposure_time;
@@ -106,93 +124,6 @@ void debug_kernel(
     );
 }
 
-__global__
-void addKernel(int* c, const int* a, const int* b)
-{
-    int i = threadIdx.x;
-    c[i] = a[i] + b[i];
-}
-
-// Helper function for using CUDA to add vectors in parallel.
-cudaError_t launchKernel(int* c, const int* a, const int* b, unsigned int size)
-{
-    int* dev_a = 0;
-    int* dev_b = 0;
-    int* dev_c = 0;
-    cudaError_t cudaStatus;
-
-    // Choose which GPU to run on, change this on a multi-GPU system.
-    cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-        goto Error;
-    }
-
-    // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    // Launch a kernel on the GPU with one thread for each element.
-    addKernel << <1, size >> > (dev_c, dev_a, dev_b);
-
-    // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
-
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-Error:
-    cudaFree(dev_c);
-    cudaFree(dev_a);
-    cudaFree(dev_b);
-
-    return cudaStatus;
-}
-
 void debug_raytracer(dFilm* film, dScene* scene, cudaArray_const_t array, cudaEvent_t event, cudaStream_t stream) {
 
     cudaError_t cuda_err = cudaBindSurfaceToArray(surf, array);
@@ -200,7 +131,7 @@ void debug_raytracer(dFilm* film, dScene* scene, cudaArray_const_t array, cudaEv
     int blockSize = 256;
     int numBlocks = ((film->hres*film->vres) + blockSize - 1) / blockSize;
 
-    debug_kernel <<< numBlocks, blockSize, 0, stream >>> (film, scene->get_camera(), scene->get_nodes(), scene->get_triangles());
+    debug_kernel <<< numBlocks, blockSize, 0, stream >>> (film, scene->get_camera(), scene->get_nodes(), scene->get_triangles(), scene->get_lights(), scene->get_nmb_lights());
 
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
@@ -225,6 +156,14 @@ void process_mesh(dVertex vertices[], unsigned int indicies[], dMaterial* materi
     int numBlocks = (size + blockSize - 1) / blockSize;
 
     d_process_mesh <<< numBlocks, blockSize >>> (vertices, indicies, materials, mat_index, offset, size, triangles);
+
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+void add_directional_lights(float3* directions, dMaterial** materials, int size, dLight** d_lights) {
+
+    d_add_directional_lights <<< 1, 1 >>> (directions, materials, size, d_lights);
 
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());

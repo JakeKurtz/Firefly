@@ -1,5 +1,4 @@
 #include "dScene.h"
-
 #include "dMath.cuh"
 #include "massert.h"
 #include "CudaHelpers.h"
@@ -9,6 +8,7 @@
 
 void reorder_primitives(dTriangle triangles[], int ordered_prims[], int size);
 void process_mesh(dVertex vertices[], unsigned int indicies[], dMaterial* materials[], int mat_index, int offset, int size, dTriangle* triangles);
+void add_directional_lights(float3* directions, dMaterial** materials, int size, dLight** d_lights);
 
 dScene::dScene(Scene* h_scene)
 {
@@ -31,6 +31,16 @@ dTriangle* dScene::get_triangles()
     return d_triangles;
 }
 
+dLight** dScene::get_lights()
+{
+    return d_lights;
+}
+
+int dScene::get_nmb_lights()
+{
+    return nmb_lights;
+}
+
 void dScene::update()
 {
     update_camera();
@@ -46,6 +56,7 @@ void dScene::load_scene()
     load_materials();
     load_models();
     load_camera();
+    load_lights();
     init_BVH_triangle_info();
     init_BVH();
     load_nodes();
@@ -165,7 +176,7 @@ void dScene::load_materials()
         #endif
         material_dictionary.insert(std::pair<string, int>(material.first, i));
 
-        checkCudaErrors(cudaMallocManaged((void**)&(d_material_list[i]), sizeof(dMaterial*)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(dMaterial*)\1000.f + "kB)" + " for material.");
+        checkCudaErrors(cudaMallocManaged((void**)&(d_material_list[i]), sizeof(dMaterial*)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(dMaterial*)\1000.f + "kB)" + " for dMaterial.");
         d_material_list[i]->baseColorFactor = float3_cast(material.second->baseColorFactor);
         d_material_list[i]->emissiveColorFactor = float3_cast(material.second->emissiveColorFactor);
         d_material_list[i]->ks = 1.f;
@@ -177,6 +188,46 @@ void dScene::load_materials()
         std::cerr << "\t materials completed." << endl;
     #endif
     materials_loaded = true;
+}
+
+void dScene::load_lights()
+{
+#ifdef LOG
+    std::cerr << "\t loading lights." << endl;
+#endif
+
+    float3* directions;
+    dMaterial** materials;
+
+    // allocate memory (host)
+    nmb_lights = h_scene->get_lights().size();
+
+    size_t sizeof_directions = nmb_lights * sizeof(float3);
+    size_t sizeof_materials = nmb_lights * sizeof(dMaterial*);
+    size_t sizeof_lights = nmb_lights * sizeof(dLight*);
+
+    checkCudaErrors(cudaMalloc((void**)&d_lights, sizeof_lights), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof_lights / 1000.f + "Kb)" + " for light list.");
+    checkCudaErrors(cudaMallocManaged((void**)&directions, sizeof_directions), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof_directions\1000.f + "kB)" + " for direction list.");
+    checkCudaErrors(cudaMallocManaged((void**)&materials, sizeof_materials), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof_materials\1000.f + "kB)" + " for material list.");
+
+    int i = 0;
+    for (auto light : h_scene->get_lights())
+    {
+        checkCudaErrors(cudaMallocManaged((void**)&(materials[i]), sizeof(dMaterial*)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(dMaterial*)\1000.f + "kB)" + " for dMaterial.");
+        materials[i]->baseColorFactor = make_float3(0.f);
+        materials[i]->emissiveColorFactor = make_float3(0.f);
+        materials[i]->ks = 0.f;
+        materials[i]->kd = 0.f;
+        materials[i]->radiance = light->getIntensity();
+        materials[i]->emissiveColorFactor = float3_cast(light->getColor());
+
+        checkCudaErrors(cudaMallocManaged((void**)&(directions[i]), sizeof(float3)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(float3)\1000.f + "kB)" + " for float3.");
+        directions[i] = float3_cast(light->getDirection());
+
+        i++;
+    }
+
+    add_directional_lights(directions, materials, h_scene->get_lights().size(), d_lights);
 }
 
 void dScene::load_camera()

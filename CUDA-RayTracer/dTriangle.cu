@@ -200,3 +200,48 @@ __device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles
 		isect.position = local_hit_point;
 	}
 }
+
+__device__ bool intersect_shadows(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& __restrict ray, float& tmin)
+{
+	float		t;
+
+	float3 invDir = make_float3(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
+	int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z < 0 };
+
+	// Follow ray through BVH nodes to find primitive intersections //
+	int toVisitOffset = 0, currentNodeIndex = 0;
+	int nodesToVisit[64];
+	while (true) {
+		const LinearBVHNode* node = &nodes[currentNodeIndex];
+		// Check ray against BVH node //
+		if (node->bounds.hit(ray, invDir, dirIsNeg)) {
+			if (node->nPrimitives > 0) {
+				// Intersect ray with primitives in leaf BVH node //
+				for (int i = 0; i < node->nPrimitives; ++i) {
+					if (triangles[node->primitivesOffset + i].shadow_hit(ray, t) && (t < tmin) && (t > 0.00001)) {
+						return (true);
+					}
+				}
+				if (toVisitOffset == 0) break;
+				currentNodeIndex = nodesToVisit[--toVisitOffset];
+			}
+			else {
+				// Put far BVH node on nodesToVisit stack, advance to near node //
+				if (dirIsNeg[node->axis]) {
+					nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
+					currentNodeIndex = node->secondChildOffset;
+				}
+				else {
+					nodesToVisit[toVisitOffset++] = node->secondChildOffset;
+					currentNodeIndex = currentNodeIndex + 1;
+				}
+			}
+		}
+		else {
+			if (toVisitOffset == 0) break;
+			currentNodeIndex = nodesToVisit[--toVisitOffset];
+		}
+	}
+
+	return (false);
+}

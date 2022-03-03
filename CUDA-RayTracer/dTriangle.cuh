@@ -26,3 +26,5 @@ public:
 };
 
 __device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& __restrict ray, Isect& isect);
+
+__device__ bool intersect_shadows(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& __restrict ray, float& tmin);

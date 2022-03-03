@@ -6,6 +6,8 @@
 #include "dVertex.cuh"
 #include "dTriangle.cuh"
 #include "BVH.h"
+#include "dLight.cuh"
+#include "dDirectionalLight.cuh"
 
 class dScene
 {
@@ -14,7 +16,8 @@ public:
 	dCamera* get_camera();
 	LinearBVHNode* get_nodes();
 	dTriangle* get_triangles();
-
+	dLight** get_lights();
+	int get_nmb_lights();
 	void update();
 
 private:
@@ -28,6 +31,9 @@ private:
 	std::vector<BVHPrimitiveInfo> BVH_triangle_info;
 	LinearBVHNode* d_nodes;
 	dTriangle* d_triangles;
+	dLight** d_lights;
+
+	int nmb_lights = 0;
 
 	bool BVH_triangle_info_loaded = false;
 	bool BVH_initialized = false;
@@ -38,6 +44,7 @@ private:
 	void load_scene();
 	void load_models();
 	void load_materials();
+	void load_lights();
 	void load_camera();
 	void load_nodes();
 

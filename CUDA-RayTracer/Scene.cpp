@@ -288,3 +288,8 @@ int Scene::get_nmb_of_triangles()
 {
     return nmb_triangles;
 }
+
+vector<DirectionalLight*> Scene::get_lights()
+{
+    return dir_lights;
+}

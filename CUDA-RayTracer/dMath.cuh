@@ -1438,4 +1438,37 @@ static inline glm::vec3 vec3_cast(const float3& v) { return glm::vec3(v.x, v.y, 
 static inline float2 float2_cast(const glm::vec2& v) { return make_float2(v.x, v.y); }
 static inline glm::vec2 vec2_cast(const float2& v) { return glm::vec2(v.x, v.y); }
 
+static inline __device__ float3 get_orthogonal_vec(float3 in)
+{
+    float3 majorAxis;
+    if (fabs(in.x) < 0.57735026919f /* 1 / sqrt(3) */) {
+        majorAxis = make_float3(1, 0, 0);
+    }
+    else if (fabs(in.y) < 0.57735026919f /* 1 / sqrt(3) */) {
+        majorAxis = make_float3(0, 1, 0);
+    }
+    else {
+        majorAxis = make_float3(0, 0, 1);
+    }
+    return majorAxis;
+}
+
+static inline __device__ void createCoordinateSystem(const float3& N, float3& T, float3& B)
+{
+    if (fabs(N.x) > fabs(N.y))
+        T = make_float3(N.z, 0, -N.x) / sqrtf(N.x * N.x + N.z * N.z);
+    else
+        T = make_float3(0, -N.z, N.y) / sqrtf(N.y * N.y + N.z * N.z);
+    B = cross(N, T);
+}
+
+/*__device__ glm::mat4 get_TBN(glm::vec3 normal)
+{
+   float3 N = normal;
+   float3 T = get_orthogonal_vec(N);
+   float3 B = normalize(cross(N, T));
+
+    return glm::mat3(T, N, B);
+}*/
+
 #endif

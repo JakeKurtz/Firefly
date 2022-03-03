@@ -17,7 +17,7 @@ const char* glsl_version = "#version 330 core";
 int width = 1024;
 int height = 1024;
 
-bool render_mode = false;
+bool render_mode = true;
 bool buffer_reset = false;
 
 float lastX;
@@ -124,7 +124,6 @@ static void imgui_init(GLFWwindow** window) {
     show_another_window = false;
     ImVec4 clear_color;
 }
-
 void render_gui()
 {
     ImGui_ImplOpenGL3_NewFrame();
@@ -215,15 +214,29 @@ int main(int argc, char** argv)
 
     EnvironmentLight* color_environmentLight = new EnvironmentLight(glm::vec3(0.f));
 
-    DirectionalLight* sun = new DirectionalLight();
-    sun->setIntensity(50.f);
-    sun->setDirection(glm::vec3(0.001, 0.98, 0.001));
+    DirectionalLight* light_1 = new DirectionalLight();
+    light_1->setIntensity(25.f);
+    light_1->setDirection(glm::vec3(0.001, 0.98, 0.001));
+    light_1->setColor(glm::vec3(1.f));
+
+    DirectionalLight* light_2 = new DirectionalLight();
+    light_2->setIntensity(50.f);
+    light_2->setDirection(glm::vec3(10.f, 10.f, 10.f) - glm::vec3(0.f, 0, 0.f));
+    light_2->setColor(glm::vec3(1.f));
+
+    DirectionalLight* light_3 = new DirectionalLight();
+    light_3->setIntensity(50.f);
+    light_3->setDirection(glm::vec3(-10.f, 10.f, -10.f) - glm::vec3(0.f, 0, 0.f));
+    light_3->setColor(glm::vec3(1.f));
 
     Scene* s = new Scene();
     s->load("../models/dragon.glb");
     //s->load("../models/monkey.glb");
     //s->load("../models/monkey_2.glb");
-    s->add_light(sun);
+    //s->add_light(light_1);
+    s->add_light(light_2);
+    s->add_light(light_3);
+
     s->set_environment_light(color_environmentLight);
     s->set_camera(camera);
 
