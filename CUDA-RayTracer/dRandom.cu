@@ -17,7 +17,7 @@ __device__ unsigned int wang_hash(unsigned int seed)
 	return seed;
 }
 
-__device__ inline float random()
+__device__ float random()
 {
 	unsigned int i = threadIdx.x + blockIdx.x * blockDim.x;
 	unsigned int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -105,7 +105,7 @@ __device__ float2 ConcentricSampleDisk()
 {
 	float2 u = make_float2(random(), random());
 
-	// Map uniform random numbers to
+	// Map uniform random numbers [0, 1] to [-1, 1]
 	float2 uOffset = 2.f * u - make_float2(1, 1);
 
 	// Handle degeneracy at the origin 

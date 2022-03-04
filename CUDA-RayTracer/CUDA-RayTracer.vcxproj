@@ -90,6 +90,7 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureArray.h" />
+    <ClInclude Include="Wavefront.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="dAreaLight.cu" />

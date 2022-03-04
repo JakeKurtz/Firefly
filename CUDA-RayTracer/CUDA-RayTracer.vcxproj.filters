@@ -260,6 +260,9 @@
     <ClInclude Include="dDirectionalLight.cuh">
       <Filter>pathtracer\Lights</Filter>
     </ClInclude>
+    <ClInclude Include="Wavefront.cuh">
+      <Filter>pathtracer\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu">

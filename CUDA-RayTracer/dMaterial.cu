@@ -181,8 +181,8 @@ __device__ float3 diff_L(dLight** lights, const Isect& isect, const float3& wi, 
 
 __device__ float3 ct_sample(const Isect& isect, const float3& wo)
 {
-	float r = 0.5;//get_roughness(isect);
-	//float r = isect.material->roughness;
+	//float r = 0.5;//get_roughness(isect);
+	float r = isect.material->roughnessFactor;
 
 	float e0 = random();
 	float e1 = random();
@@ -219,7 +219,7 @@ __device__ float ct_get_pdf(float3 n, float3 wi, float3 wo, float r)
 };
 __device__ float3 ct_f(const Isect& isect, const float3& wi, const float3& wo)
 {
-	float r = 0.5;//get_roughness(isect);
+	float r = isect.material->roughnessFactor;//get_roughness(isect);
 	//float m = get_metallic(isect);
 	//float3 a = get_albedo(isect);
 
@@ -246,14 +246,13 @@ __device__ float3 ct_f(const Isect& isect, const float3& wi, const float3& wo)
 };
 __device__ float3 ct_sample_f(const Isect& isect, const float3& wo, float3& wi, float& pdf)
 {
-	float r = 0.5;//get_roughness(isect);
-	//float r = isect.material->roughness;
+	float r = isect.material->roughnessFactor;
 
 	float e0 = random();
 	float e1 = random();
 
 	double theta = atan(r * r * sqrtf(e0 / (1.f - e0)));
-	double phi = 2 * M_PI * e1;
+	double phi = 2.f * M_PI * e1;
 
 	float3 h = make_float3(
 		sin(theta) * cos(phi),

@@ -6,21 +6,28 @@
 #include "Interop.h"
 
 #include <iostream>
+#include "Wavefront.cuh"
 
 class PathTracer
 {
 public:
     PathTracer(int w, int h);
     void draw(dScene* s);
+    void draw_debug(dScene* s);
+
+    void clear_buffer();
 private:
+    const int BLOCK_SIZE = 64;
+    const uint32_t  MAX_PATH_LENGTH = 5;
+
     int             width;
     int             height;
 
-    uint32_t        PATHCOUNT = width * height;
-    const uint32_t  MAXPATHLENGTH = 2;
+    int path_count = 0;
+    int grid_size = 0;
 
-    const int       BLOCKSIZE = 64;
-    const int       GRIDSIZE = (PATHCOUNT + BLOCKSIZE - 1) / BLOCKSIZE;
+    __constant__ Paths* paths;
+    __constant__ Queues* queues;
 
     // image buffer storing accumulated pixel samples
     float4* accumulatebuffer;
@@ -47,8 +54,10 @@ private:
 
     void update_film();
 
-    void clear_buffer();
     void clear_queues();
     void clear_paths();
+
+    int get_grid_size() { return grid_size; };
+    int get_block_size() { return (path_count + BLOCK_SIZE - 1) / BLOCK_SIZE; };
 };
 

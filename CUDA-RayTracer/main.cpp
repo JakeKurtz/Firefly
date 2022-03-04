@@ -17,7 +17,8 @@ const char* glsl_version = "#version 330 core";
 int width = 1024;
 int height = 1024;
 
-bool render_mode = true;
+int render_mode = 0;
+
 bool buffer_reset = false;
 
 float lastX;
@@ -158,7 +159,9 @@ void render_gui()
         if (ImGui::TreeNode("Camera Settings"))
         {
 
-            ImGui::Checkbox("Render Mode", &render_mode);
+            ImGui::RadioButton("Rasterizer", &render_mode, 0);
+            ImGui::RadioButton("Raytracer", &render_mode, 1);
+            ImGui::RadioButton("Pathtracer", &render_mode, 2);
 
             ImGui::Text("Background Color");
             ImGui::ColorEdit3("##background_color", (float*)&background_color);
@@ -221,7 +224,7 @@ int main(int argc, char** argv)
 
     DirectionalLight* light_2 = new DirectionalLight();
     light_2->setIntensity(50.f);
-    light_2->setDirection(glm::vec3(10.f, 10.f, 10.f) - glm::vec3(0.f, 0, 0.f));
+    light_2->setDirection(glm::vec3(1,1,1));
     light_2->setColor(glm::vec3(1.f));
 
     DirectionalLight* light_3 = new DirectionalLight();
@@ -230,12 +233,13 @@ int main(int argc, char** argv)
     light_3->setColor(glm::vec3(1.f));
 
     Scene* s = new Scene();
-    s->load("../models/dragon.glb");
+    s->load("../models/metal_ball.glb");
+    //s->load("../models/dragon_2.glb");
     //s->load("../models/monkey.glb");
     //s->load("../models/monkey_2.glb");
-    //s->add_light(light_1);
     s->add_light(light_2);
-    s->add_light(light_3);
+    //s->add_light(light_2);
+    //s->add_light(light_3);
 
     s->set_environment_light(color_environmentLight);
     s->set_camera(camera);
@@ -253,10 +257,18 @@ int main(int argc, char** argv)
 
         glfw_process_input(window);
 
-        if (render_mode)
+        if (render_mode == 0)
             r->draw(s);
-        else
+        else if (render_mode == 1) {
+            pt->draw_debug(ds);
+        }
+        else if (render_mode == 2) {
             pt->draw(ds);
+            if (buffer_reset) {
+                pt->clear_buffer();
+                buffer_reset = false;
+            }
+        }
 
         render_gui();
 
@@ -267,7 +279,7 @@ int main(int argc, char** argv)
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    //cudaDeviceReset();
+    cudaDeviceReset();
     exit(EXIT_SUCCESS);
 }
 
@@ -278,7 +290,7 @@ static void glfw_error_callback(int error, const char* description)
 static void glfw_window_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
-
+    buffer_reset = true;
     // get context
     //Interop* interop = (Interop*)glfwGetWindowUserPointer(window);
     //interop->set_size(width, height);

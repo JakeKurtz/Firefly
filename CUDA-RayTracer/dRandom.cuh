@@ -6,7 +6,7 @@
 
 __device__ unsigned int wang_hash(unsigned int seed);
 
-__device__ inline float random();
+__device__ float random();
 
 __device__ float rand_float();
 __device__ float rand_float(int min, int max);

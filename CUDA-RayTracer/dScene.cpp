@@ -178,6 +178,7 @@ void dScene::load_materials()
 
         checkCudaErrors(cudaMallocManaged((void**)&(d_material_list[i]), sizeof(dMaterial*)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(dMaterial*)\1000.f + "kB)" + " for dMaterial.");
         d_material_list[i]->baseColorFactor = float3_cast(material.second->baseColorFactor);
+        d_material_list[i]->roughnessFactor = material.second->roughnessFactor;
         d_material_list[i]->emissiveColorFactor = float3_cast(material.second->emissiveColorFactor);
         d_material_list[i]->ks = 1.f;
         d_material_list[i]->kd = 1.f;
