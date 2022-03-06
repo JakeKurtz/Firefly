@@ -8,7 +8,7 @@ dDirectionalLight::dDirectionalLight(void)
 
 dDirectionalLight::dDirectionalLight(float3 dir)
 {
-	(this)->dir = dir;
+	(this)->dir = normalize(dir);
 }
 
 __device__ void dDirectionalLight::get_direction(const Isect& isect, float3& wi, float3& sample_point)
@@ -43,12 +43,12 @@ __device__ bool dDirectionalLight::visible(const dRay& ray, float& tmin, Isect& 
 
 __device__ float dDirectionalLight::get_pdf(const Isect& isect) const
 {
-	return 1.f;
+	return 5000.f;
 }
 
 __device__ float dDirectionalLight::get_pdf(const Isect& isect, const dRay& ray) const
 {
-	return 1.f;
+	return 5000.f;
 }
 
 __device__ bool dDirectionalLight::in_shadow(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& ray) const

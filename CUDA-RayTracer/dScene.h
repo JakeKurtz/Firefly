@@ -44,6 +44,7 @@ private:
 	void load_scene();
 	void load_models();
 	void load_materials();
+	int load_texture(Texture* tex);
 	void load_lights();
 	void load_camera();
 	void load_nodes();

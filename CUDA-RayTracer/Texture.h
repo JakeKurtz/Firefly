@@ -28,6 +28,8 @@ public:
 	int depth;
 	int nrComponents;
 
+	unsigned char* data; // TODO: create a HDR texture class
+
 	Texture();
 	Texture(string const& path, GLenum target, bool flip = false, bool mipmap = false, bool gamma = false, string name = "", GLint wrap = GL_REPEAT, GLint mag_filter = GL_LINEAR, GLint min_filter = GL_LINEAR);
 	Texture(const aiTexture* tex, GLenum target, bool flip = false, bool mipmap = false, bool gamma = false, string name = "", GLint wrap = GL_REPEAT, GLint mag_filter = GL_LINEAR, GLint min_filter = GL_LINEAR);

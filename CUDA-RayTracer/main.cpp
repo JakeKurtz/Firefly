@@ -219,7 +219,7 @@ int main(int argc, char** argv)
 
     DirectionalLight* light_1 = new DirectionalLight();
     light_1->setIntensity(25.f);
-    light_1->setDirection(glm::vec3(0.001, 0.98, 0.001));
+    light_1->setDirection(glm::vec3(0.f, 0.98, 0.001));
     light_1->setColor(glm::vec3(1.f));
 
     DirectionalLight* light_2 = new DirectionalLight();
@@ -233,11 +233,10 @@ int main(int argc, char** argv)
     light_3->setColor(glm::vec3(1.f));
 
     Scene* s = new Scene();
-    s->load("../models/metal_ball.glb");
-    //s->load("../models/dragon_2.glb");
+    //s->load("../models/test_scene.glb");
+    s->load("../models/bunny.glb");
     //s->load("../models/monkey.glb");
-    //s->load("../models/monkey_2.glb");
-    s->add_light(light_2);
+    s->add_light(light_1);
     //s->add_light(light_2);
     //s->add_light(light_3);
 

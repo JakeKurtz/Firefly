@@ -10,6 +10,21 @@ void reorder_primitives(dTriangle triangles[], int ordered_prims[], int size);
 void process_mesh(dVertex vertices[], unsigned int indicies[], dMaterial* materials[], int mat_index, int offset, int size, dTriangle* triangles);
 void add_directional_lights(float3* directions, dMaterial** materials, int size, dLight** d_lights);
 
+uint get_mip_map_levels(cudaExtent size)
+{
+    size_t sz = MAX(MAX(size.width, size.height), size.depth);
+
+    uint levels = 0;
+
+    while (sz)
+    {
+        sz /= 2;
+        levels++;
+    }
+
+    return levels;
+}
+
 dScene::dScene(Scene* h_scene)
 {
 	(this)->h_scene = h_scene;
@@ -183,12 +198,75 @@ void dScene::load_materials()
         d_material_list[i]->ks = 1.f;
         d_material_list[i]->kd = 1.f;
         d_material_list[i]->radiance = 1.f;
+
+        d_material_list[i]->baseColorTexture = load_texture(material.second->baseColorTexture);
+        d_material_list[i]->roughnessTexture = load_texture(material.second->roughnessTexture);
+        d_material_list[i]->metallicRoughnessTexture = load_texture(material.second->metallicRoughnessTexture);
+
         i++;
     }
     #ifdef LOG
         std::cerr << "\t materials completed." << endl;
     #endif
     materials_loaded = true;
+}
+
+int dScene::load_texture(Texture* tex) 
+{
+    if (tex != NULL) {
+        /*cudaTextureObject_t textureObject;
+        cudaMipmappedArray_t mipmapArray;
+        auto size = make_cudaExtent(tex->width, tex->height, 0);
+        uint levels = get_mip_map_levels(size);
+
+        cudaChannelFormatDesc desc = cudaCreateChannelDesc<uchar4>();
+        checkCudaErrors(cudaMallocMipmappedArray(&mipmapArray, &desc, size, levels));
+
+        cudaArray_t level0;
+        checkCudaErrors(cudaGetMipmappedArrayLevel(&level0, mipmapArray, 0));
+
+        cudaMemcpy3DParms copyParams = { 0 };
+        copyParams.srcPtr = make_cudaPitchedPtr(tex->data, size.width * sizeof(uchar4), size.width, size.height);
+        copyParams.dstArray = level0;
+        copyParams.extent = size;
+        copyParams.extent.depth = 1;
+        copyParams.kind = cudaMemcpyHostToDevice;
+        checkCudaErrors(cudaMemcpy3D(&copyParams));
+
+        // compute rest of mipmaps based on level 0
+        //generateMipMaps(mipmapArray, size);
+
+        // generate bindless texture object
+
+        cudaResourceDesc resDescr;
+        memset(&resDescr, 0, sizeof(cudaResourceDesc));
+
+        resDescr.resType = cudaResourceTypeMipmappedArray;
+        resDescr.res.mipmap.mipmap = mipmapArray;
+
+        cudaTextureDesc texDescr;
+        memset(&texDescr, 0, sizeof(cudaTextureDesc));
+
+        texDescr.normalizedCoords = 1;
+        texDescr.filterMode = cudaFilterModeLinear;
+        texDescr.mipmapFilterMode = cudaFilterModeLinear;
+
+        texDescr.addressMode[0] = cudaAddressModeWrap;
+        texDescr.addressMode[1] = cudaAddressModeWrap;
+        texDescr.addressMode[2] = cudaAddressModeWrap;
+
+        texDescr.maxMipmapLevelClamp = float(levels - 1);
+
+        texDescr.readMode = cudaReadModeNormalizedFloat;
+
+        checkCudaErrors(cudaCreateTextureObject(&textureObject, &resDescr, &texDescr, NULL));
+        return textureObject;
+        */
+        return -1;
+    }
+    else {
+        return -1;
+    }
 }
 
 void dScene::load_lights()

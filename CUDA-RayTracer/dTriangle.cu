@@ -2,6 +2,8 @@
 #include "dMath.cuh"
 #include "BVH.h"
 
+#define TEST_CULL
+
 __device__ dTriangle::dTriangle(void)
 {
 	v0.position = make_float3(0, 0, 0);
@@ -40,7 +42,7 @@ __device__ bool dTriangle::intersect(const dRay& ray, float& u, float& v, float&
 	if (det < K_EPSILON)
 		return false;
 
-	float3 tvec = ray.o - v0.Position;
+	float3 tvec = ray.o - v0.position;
 	u = dot(tvec, pvec);
 	if (u < 0.0 || u > det)
 		return false;
@@ -131,7 +133,7 @@ __device__ bool dTriangle::shadow_hit(const dRay& ray, float& tmin) const
 	return true;
 };
 
-__device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& __restrict ray, Isect& isect)
+__device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& __restrict ray, Isect& isect, Isect& isect_self)
 {
 	float		t;
 	int			triangle_id;
@@ -160,7 +162,7 @@ __device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles
 					// Intersect ray with primitives in leaf BVH node //
 					for (int i = 0; i < node->nPrimitives; ++i) {
 						int triangle_id = node->primitivesOffset + i;
-						if (triangles[triangle_id].hit(ray, t, isect) && (t < tmin) && (t > 0.00001)) {
+						if (triangles[triangle_id].hit(ray, t, isect) && (t < tmin) && (t > 0.00001) && triangle_id != isect_self.triangle_id) {
 							isect.wasFound = true;
 							triangle_id = node->primitivesOffset + i;
 							isect.material = triangles[triangle_id].material;

@@ -17,13 +17,13 @@ struct dMaterial
 	float kd = 1.f;
 	float radiance = 0.f;
 
-	int baseColorTexture;
-	int normalTexture;
-	int occlusionTexture;
-	int emissiveTexture;
-	int roughnessTexture;
-	int metallicTexture;
-	int metallicRoughnessTexture;
+	int baseColorTexture = -1;
+	int normalTexture = -1;
+	int occlusionTexture = -1;
+	int emissiveTexture = -1;
+	int roughnessTexture = -1;
+	int metallicTexture = -1;
+	int metallicRoughnessTexture = -1;
 };
 
 __device__ float3 get_albedo(const Isect& isect);

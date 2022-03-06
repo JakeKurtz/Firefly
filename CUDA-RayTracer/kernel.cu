@@ -13,7 +13,7 @@
 
 surface<void, cudaSurfaceType2D> surf;
 
-__constant__ float SHADDOW_OFFSET = 0.12;
+__constant__ float SHADOW_OFFSET = 0.01;
 
 union pxl_rgbx_24
 {
@@ -101,7 +101,7 @@ void debug_kernel(
 
     Isect isect;
     Isect isect_d;
-    intersect(nodes, triangles, ray, isect);
+    intersect(nodes, triangles, ray, isect, isect_d);
 
     float3 color = make_float3(0.f);
 
@@ -110,13 +110,13 @@ void debug_kernel(
             float3 lightdir, sample_point;
             lights[i]->get_direction(isect, lightdir, sample_point);
 
-            dRay shadow_ray = dRay(isect.position + isect.normal * SHADDOW_OFFSET, lightdir);
+            dRay shadow_ray = dRay(isect.position + isect.normal * SHADOW_OFFSET, lightdir);
 
             float diff = fmaxf(dot(isect.normal, lightdir), 0.f);
 
             if (diff >= 0.f) {
                 if (!lights[i]->in_shadow(nodes, triangles, shadow_ray)) {
-                    color += (isect.material->baseColorFactor * diff * 1.f) * lights[i]->L(isect);
+                    color += (get_albedo(isect) * diff * 1.f) * lights[i]->L(isect);
                     //color = isect.normal * fmaxf(0.f, dot(isect.normal, lightdir));
                 }
             }
@@ -192,7 +192,6 @@ void wf_logic(
 
     if (pathLength > MAXPATHLENGTH || !paths->ext_isect[id].wasFound) {
         terminate = true;
-        goto TERMINATE;
     }
 
     /*if (material_ptr->materialIndex == MaterialIndex::Emissive) {
@@ -289,7 +288,7 @@ TERMINATE:
 
         lights[0]->get_direction(paths->ext_isect[id], lightdir, sample_point);
 
-        shadow_ray = dRay(paths->ext_isect[id].position + paths->ext_isect[id].normal * SHADDOW_OFFSET, lightdir);
+        shadow_ray = dRay(paths->ext_isect[id].position + paths->ext_isect[id].normal * SHADOW_OFFSET, lightdir);
         paths->light_ray[id] = shadow_ray;
         paths->light_samplePoint[id] = sample_point;
 
@@ -299,25 +298,26 @@ TERMINATE:
         paths->throughput[id] = beta;
     }
 
+    if ((float)n_samples[pixel_index] >= 1) {
+        final_col = fb_accum[pixel_index] / (float)n_samples[pixel_index];
+        final_col *= camera->exposure_time;
+        final_col /= (final_col + 1.0f);
 
-    final_col = fb_accum[pixel_index] / (float)n_samples[pixel_index];
-    final_col *= camera->exposure_time;
-    final_col /= (final_col + 1.0f);
+        union pxl_rgbx_24 rgbx;
 
-    union pxl_rgbx_24 rgbx;
+        rgbx.r = (int)255 * final_col.x;
+        rgbx.g = (int)255 * final_col.y;
+        rgbx.b = (int)255 * final_col.z;
+        rgbx.na = 255;
 
-    rgbx.r = (int)255 * final_col.x;
-    rgbx.g = (int)255 * final_col.y;
-    rgbx.b = (int)255 * final_col.z;
-    rgbx.na = 255;
-
-    surf2Dwrite(
-        rgbx.b32,
-        surf,
-        x * sizeof(rgbx),
-        y,
-        cudaBoundaryModeZero
-    );
+        surf2Dwrite(
+            rgbx.b32,
+            surf,
+            x * sizeof(rgbx),
+            y,
+            cudaBoundaryModeZero
+        );
+    }
 }
 
 __global__
@@ -366,15 +366,15 @@ void wf_extend(
 
     dRay ray = paths->ext_ray[id];
     Isect isect;
-    intersect(nodes, triangles, ray, isect);
+    intersect(nodes, triangles, ray, isect, paths->ext_isect[id]);
 
-    //Isect isect_light;
-    //float tmin_light;
+    Isect isect_light;
+    float tmin_light;
 
-    //int light_id = paths->light_id[id];
+    //int light_id = 0;//paths->light_id[id];
 
-    //if (g_lights[light_id]->visible(ray, tmin_light, isect_light) && isect_light.distance < isect.distance) {
-    //    isect_light.material_ptr = g_lights[light_id]->material_ptr;
+    //if (lights[light_id]->visible(ray, tmin_light, isect_light) && isect_light.distance < isect.distance) {
+    //    isect_light.material = lights[light_id]->material;
     //    paths->length[id]++;
     //    paths->ext_isect[id] = isect_light;
     //}
@@ -503,8 +503,8 @@ void wf_mat_mix(
         dRay ext_ray = dRay(isect.position, ext_dir);
         
         paths->ext_ray[id] = ext_ray;
-        paths->light_brdf[id] = ct_L(lights, isect, wi, wo, light_id, sample_point, isect.material->roughnessFactor);//get_roughness(isect));
-        paths->ext_pdf[id] = ct_get_pdf(isect.normal, ext_dir, wo, isect.material->roughnessFactor); //get_roughness(isect));
+        paths->light_brdf[id] = ct_L(lights, isect, wi, wo, light_id, sample_point, get_roughness(isect));
+        paths->ext_pdf[id] = ct_get_pdf(isect.normal, ext_dir, wo, get_roughness(isect));
         paths->ext_brdf[id] = ct_f(isect, ext_dir, wo);
     }
     else {

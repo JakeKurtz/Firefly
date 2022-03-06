@@ -115,7 +115,7 @@ unsigned int Texture::loadHDR(string filename, GLenum target)
 
 unsigned int Texture::load(string filename, GLenum target)
 {
-    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
+    data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
 
     format = GL_RED;
     if (nrComponents == 1)
@@ -135,15 +135,13 @@ unsigned int Texture::load(string filename, GLenum target)
         if (target == GL_TEXTURE_3D)
             glTexImage3D(target, 0, format, width, height, 1, 0, format, type, data);
 
-        stbi_image_free(data);
+        //stbi_image_free(data);
         return 1;
     }
     else return 0;
 }
 
 unsigned int Texture::loadEmbedded(const aiTexture* tex) {
-    unsigned char* data = nullptr;
-
     if (tex->mHeight == 0) {
         data = stbi_load_from_memory(reinterpret_cast<unsigned char*>(tex->pcData), tex->mWidth, &width, &height, &nrComponents, 0);
     }
@@ -166,7 +164,7 @@ unsigned int Texture::loadEmbedded(const aiTexture* tex) {
         if (target == GL_TEXTURE_2D) glTexImage2D(target, 0, format, width, height, 0, format, type, data);
         if (target == GL_TEXTURE_3D) glTexImage3D(target, 0, format, width, height, 1, 0, format, type, data);
 
-        stbi_image_free(data);
+        //stbi_image_free(data);
         return 1;
     }
     else return 0;

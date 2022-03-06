@@ -151,7 +151,7 @@ __device__ float3 diff_f(const Isect& isect, const float3& wi, const float3& wo)
 
 	//return (get_albedo(isect) * M_1_PI * isect.material->kd);
 	//return (make_float3(1,0,0) * M_1_PI * 1.f);
-	return (isect.material->baseColorFactor * M_1_PI * 1.f);
+	return (get_albedo(isect) * M_1_PI * 1.f);
 	//return (isect.position);// *M_1_PI * 1.f);
 };
 __device__ float3 diff_L(dLight** lights, const Isect& isect, const float3& wi, const float3& wo, int light_id, const float3& sample_point)
@@ -181,8 +181,7 @@ __device__ float3 diff_L(dLight** lights, const Isect& isect, const float3& wi, 
 
 __device__ float3 ct_sample(const Isect& isect, const float3& wo)
 {
-	//float r = 0.5;//get_roughness(isect);
-	float r = isect.material->roughnessFactor;
+	float r = get_roughness(isect);
 
 	float e0 = random();
 	float e1 = random();
@@ -219,7 +218,7 @@ __device__ float ct_get_pdf(float3 n, float3 wi, float3 wo, float r)
 };
 __device__ float3 ct_f(const Isect& isect, const float3& wi, const float3& wo)
 {
-	float r = isect.material->roughnessFactor;//get_roughness(isect);
+	float r = get_roughness(isect);
 	//float m = get_metallic(isect);
 	//float3 a = get_albedo(isect);
 
@@ -246,7 +245,7 @@ __device__ float3 ct_f(const Isect& isect, const float3& wi, const float3& wo)
 };
 __device__ float3 ct_sample_f(const Isect& isect, const float3& wo, float3& wi, float& pdf)
 {
-	float r = isect.material->roughnessFactor;
+	float r = get_roughness(isect);
 
 	float e0 = random();
 	float e1 = random();
