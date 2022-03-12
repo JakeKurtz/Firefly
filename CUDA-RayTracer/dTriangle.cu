@@ -2,7 +2,7 @@
 #include "dMath.cuh"
 #include "BVH.h"
 
-#define TEST_CULL
+//#define TEST_CULL
 
 __device__ dTriangle::dTriangle(void)
 {

@@ -35,6 +35,10 @@ private:
 
 	int nmb_lights = 0;
 
+	int nmb_dir_lights = 0;
+	int nmb_pnt_lights = 0;
+	int nmb_area_lights = 0;
+
 	bool BVH_triangle_info_loaded = false;
 	bool BVH_initialized = false;
 	bool materials_loaded = false;

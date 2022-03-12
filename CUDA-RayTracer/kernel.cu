@@ -5,6 +5,9 @@
 #include "dCamera.cuh"
 #include "BVH.h"
 #include "dDirectionalLight.cuh"
+#include "dAreaLight.cuh"
+
+#include "Rectangle.cuh"
 
 #include <surface_functions.h>
 #include "dScene.h"
@@ -49,6 +52,18 @@ void d_add_directional_lights(float3 dir[], dMaterial* materials[], int size, dL
     for (int i = 0; i < size; i ++) {
         lights[i] = new dDirectionalLight(dir[i]);
         lights[i]->material = materials[i];
+    }
+}
+
+__global__
+void d_add_area_lights(_Rectangle* objs[], dMaterial* materials[], int size, dLight** lights)
+{
+    for (int i = 0; i < size; i++) {
+        dAreaLight* a_light = new dAreaLight();
+        lights[i] = a_light;
+        lights[i]->material = materials[i];
+        _Rectangle* r = new _Rectangle(make_float3(-25.f, 100, -25.f), make_float3(50, 0.f, 0.f), make_float3(0.f, 0.f, 50), make_float3(0.f, -1.f, 0.f));
+        a_light->set_object(r);
     }
 }
 
@@ -194,17 +209,15 @@ void wf_logic(
         terminate = true;
     }
 
-    /*if (material_ptr->materialIndex == MaterialIndex::Emissive) {
-        fb_accum[pixel_index] += make_float4(beta * emissive_L(material_ptr), 0);
-        terminate = true;
-        goto TERMINATE;
-    }*/
-
-    //if (pathLength == 1) {
-    //    fb_accum[pixel_index] += make_float4(emissive_L(material_ptr), 0);
-        //terminate = true;
-        //goto TERMINATE;
-    //}
+    if (pathLength == 1){
+        for (int i = 0; i < 1; i++) {
+            float t;
+            Isect is;
+            dRay r = paths->ext_ray[id];
+            if (lights[i]->visible(r, t, is) && t < paths->ext_isect[id].distance) 
+                fb_accum[pixel_index] += make_float4(beta * emissive_L(lights[i]->material), 0);
+        }
+    }
 
     if (pathLength > 1) {
         if (!paths->light_inshadow[id]) {
@@ -240,7 +253,6 @@ TERMINATE:
         // add path to newPath queue
         uint32_t queueIndex = atomicAggInc(&queues->queue_newPath_length);
         queues->queue_newPath[queueIndex] = id;
-
     }
     else // path continues
     {
@@ -298,7 +310,7 @@ TERMINATE:
         paths->throughput[id] = beta;
     }
 
-    if ((float)n_samples[pixel_index] >= 1) {
+    if (n_samples[pixel_index] >= 1) {
         final_col = fb_accum[pixel_index] / (float)n_samples[pixel_index];
         final_col *= camera->exposure_time;
         final_col /= (final_col + 1.0f);
@@ -461,14 +473,16 @@ void wf_mat_cook(
     const float3 wo = -paths->ext_ray[id].d;
     const float3 sample_point = paths->light_samplePoint[id];
     int light_id = paths->light_id[id];
-    const float3 ext_dir = ct_sample(isect, wo);
+    const float3 ext_dir = spec_sample(isect, wo);
     dRay ext_ray = dRay(isect.position, ext_dir);
 
     paths->ext_ray[id] = ext_ray;
-    paths->light_brdf[id] = ct_L(lights, isect, wi, wo, light_id, sample_point, get_roughness(isect));
-    paths->ext_brdf[id] = ct_f(isect, ext_dir, wo);
-    paths->ext_pdf[id] = ct_get_pdf(isect.normal, ext_dir, wo, get_roughness(isect));
+    paths->light_brdf[id] = spec_L(lights, isect, wi, wo, light_id, sample_point, get_roughness(isect));
+    paths->ext_brdf[id] = spec_f(isect, ext_dir, wo);
+    paths->ext_pdf[id] = spec_get_pdf(isect.normal, ext_dir, wo, get_roughness(isect));
     paths->ext_cosine[id] = fmaxf(0.0, dot(isect.normal, ext_dir));
+
+    paths->ext_brdf_type[id] = BSDF::specularBounce;
 
     uint32_t queueIndex = atomicAggInc(&queues->queue_extension_length);
     queues->queue_extension[queueIndex] = id;
@@ -498,29 +512,12 @@ void wf_mat_mix(
     int light_id = paths->light_id[id];
 
     float3 ext_dir;
-    if (random() < 0.5) {
-        ext_dir = ct_sample(isect, wo);
-        dRay ext_ray = dRay(isect.position, ext_dir);
-        
-        paths->ext_ray[id] = ext_ray;
-        paths->light_brdf[id] = ct_L(lights, isect, wi, wo, light_id, sample_point, get_roughness(isect));
-        paths->ext_pdf[id] = ct_get_pdf(isect.normal, ext_dir, wo, get_roughness(isect));
-        paths->ext_brdf[id] = ct_f(isect, ext_dir, wo);
-    }
-    else {
-        ext_dir = diff_sample(isect);
-        dRay ext_ray = dRay(isect.position, ext_dir);
 
-        paths->ext_ray[id] = ext_ray;
-        paths->light_brdf[id] = diff_L(lights, isect, wi, wo, light_id, sample_point);
-        paths->ext_pdf[id] = diff_get_pdf();
-        paths->ext_brdf[id] = diff_f(isect, ext_dir, wo);
-    }
-
+    paths->light_brdf[id] = BRDF_L(lights, isect, wi, wo, light_id, sample_point, ext_dir);
+    paths->ext_brdf[id] = BRDF_f(isect, ext_dir, wo);
+    paths->ext_pdf[id] = BRDF_pdf(isect, ext_dir, wo);
+    paths->ext_ray[id] = dRay(isect.position, ext_dir);
     paths->ext_cosine[id] = fmaxf(0.0, dot(isect.normal, ext_dir));
-    //paths->ext_brdf[id] = mix_f(isect, ext_dir, wo);
-    //paths->ext_pdf[id] = mix_get_pdf(isect.normal, ext_dir, wo, material);
-    //paths->light_brdf[id] = mix_L(isect, wi, wo, sample_point, material->roughness);
 
     uint32_t queueIndex = atomicAggInc(&queues->queue_extension_length);
     queues->queue_extension[queueIndex] = id;
@@ -600,6 +597,14 @@ void process_mesh(dVertex vertices[], unsigned int indicies[], dMaterial* materi
 void add_directional_lights(float3* directions, dMaterial** materials, int size, dLight** d_lights) {
 
     d_add_directional_lights <<< 1, 1 >>> (directions, materials, size, d_lights);
+
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+void add_area_lights(_Rectangle** objs, dMaterial** materials, int size, dLight** d_lights) {
+
+    d_add_area_lights << < 1, 1 >> > (objs, materials, size, d_lights);
 
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());

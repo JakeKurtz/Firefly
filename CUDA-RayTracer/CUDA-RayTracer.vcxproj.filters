@@ -132,6 +132,7 @@
     <ClCompile Include="PathTracer.cpp">
       <Filter>pathtracer\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="dTexture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CudaHelpers.h">
@@ -263,6 +264,7 @@
     <ClInclude Include="Wavefront.cuh">
       <Filter>pathtracer\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="dTexture.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu">

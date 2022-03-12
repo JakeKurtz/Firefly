@@ -7,6 +7,8 @@ class dMaterial;
 class dRay;
 class Isect;
 
+enum class BSDF { diffuseBounce, specularBounce };
+
 struct Paths
 {
     float2* film_pos;
@@ -17,6 +19,7 @@ struct Paths
     dRay* ext_ray;
     Isect* ext_isect;
     float3* ext_brdf;
+    BSDF* ext_brdf_type;
     float* ext_pdf;
     float* ext_cosine;
     bool* ext_specular;

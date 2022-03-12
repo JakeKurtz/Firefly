@@ -117,6 +117,7 @@ void PathTracer::init_paths()
     checkCudaErrors(cudaMallocManaged(&paths->ext_ray, sizeof(dRay) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
     checkCudaErrors(cudaMallocManaged(&paths->ext_isect, sizeof(Isect) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
     checkCudaErrors(cudaMallocManaged(&paths->ext_brdf, sizeof(float3) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
+    checkCudaErrors(cudaMallocManaged(&paths->ext_brdf_type, sizeof(BSDF) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
     checkCudaErrors(cudaMallocManaged(&paths->ext_pdf, sizeof(float) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
     checkCudaErrors(cudaMallocManaged(&paths->ext_cosine, sizeof(float) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
     checkCudaErrors(cudaMallocManaged(&paths->ext_specular, sizeof(bool) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");

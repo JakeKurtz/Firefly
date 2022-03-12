@@ -234,8 +234,9 @@ int main(int argc, char** argv)
 
     Scene* s = new Scene();
     //s->load("../models/test_scene.glb");
-    s->load("../models/bunny.glb");
+    //s->load("../models/bunny.glb");
     //s->load("../models/monkey.glb");
+    s->load("../models/dragon.glb");
     s->add_light(light_1);
     //s->add_light(light_2);
     //s->add_light(light_3);

@@ -1,9 +1,10 @@
 #pragma once 
 #include <cuda_runtime.h>
 
-class dRay;
-class dMaterial;
-class Isect;
+#include "dMath.cuh"
+#include "dRay.cuh"
+#include "Isect.cuh"
+#include "dMaterial.cuh"
 
 class GeometricObj {
 
@@ -22,7 +23,7 @@ public:
 	__device__ virtual float pdf(const Isect& isect);
 	__device__ void add_object(GeometricObj* object_ptr);
 
-	dMaterial* material_ptr;
+	dMaterial* material;
 
 protected:
 	float3				color;

@@ -1,10 +1,5 @@
 #include "GeometricObj.cuh"
 
-#include "dMath.cuh"
-#include "dRay.cuh"
-#include "Isect.cuh"
-#include "dMaterial.cuh"
-
 __device__ float3 GeometricObj::sample(void)
 {
 	return make_float3(0, 0, 0);
@@ -27,12 +22,12 @@ __device__ float3 GeometricObj::get_color()
 
 __device__ dMaterial* GeometricObj::get_material(void)
 {
-	return material_ptr;
+	return material;
 };
 
-__device__ void GeometricObj::set_material(dMaterial* _material_ptr)
+__device__ void GeometricObj::set_material(dMaterial* _material)
 {
-	material_ptr = _material_ptr;
+	material = _material;
 };
 
 __device__ void GeometricObj::enable_shadows(bool b)

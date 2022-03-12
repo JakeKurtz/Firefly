@@ -2,11 +2,12 @@
 #include "GeometricObj.cuh"
 #include "Isect.cuh"
 #include "dRay.cuh"
+#include "dTriangle.cuh"
 
 __device__ dAreaLight::dAreaLight(void) :
 	dLight(),
 	object_ptr(nullptr)//,
-	//material_ptr(nullptr)
+//	material(nullptr)
 {
 	ls = 1.f;
 	position = make_float3(0, 0, 0);
@@ -23,13 +24,14 @@ __device__ void dAreaLight::get_direction(const Isect& isect, float3& wi, float3
 
 __device__ float3 dAreaLight::L(const Isect& isect, float3 wi, float3 sample_point)
 {
+	//return (emissive_L(material));
 	float3 light_normal = object_ptr->get_normal(sample_point);
 	float n_dot_d = dot(-light_normal, wi);
 
-	//if (n_dot_d > 0.0)
-	//	return (emissive_L(material_ptr));
-	//else
-	//	return (make_float3(0, 0, 0));
+	if (n_dot_d > 0.0)
+		return (emissive_L(material));
+	else
+		return (make_float3(0.f));
 };
 
 __device__ float dAreaLight::G(const Isect& isect) const
@@ -82,7 +84,7 @@ __device__ float dAreaLight::get_pdf(const Isect& isect, const dRay& ray) const
 __device__ bool dAreaLight::in_shadow(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& ray) const
 {
 	float ts = dot((object_ptr->sample() - ray.o), ray.d);
-	return false;//(intersect_shadows(ray, ts));
+	return (intersect_shadows(nodes, triangles, ray, ts));
 };
 
 __device__ void dAreaLight::set_position(const float x, const float y, const float z)
@@ -99,9 +101,3 @@ __device__ void dAreaLight::set_object(GeometricObj* obj_ptr)
 {
 	object_ptr = obj_ptr;
 };
-/*
-__device__ void dAreaLight::set_material(cudaMaterial* mat_ptr)
-{
-	material_ptr = mat_ptr;
-};
-*/

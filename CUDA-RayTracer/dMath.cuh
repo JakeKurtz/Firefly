@@ -126,7 +126,7 @@ __constant__ const float M_SQRT1_2 = 0.707106781186547524400844362104849039;
 
 template <typename T> __host__ __device__ T lerp(const T a, const T b, const float w)
 {
-    return a + w * (b - a);
+    return a*(1.f-w) + b*w;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

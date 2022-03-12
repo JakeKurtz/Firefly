@@ -18,7 +18,7 @@ public:
     void clear_buffer();
 private:
     const int BLOCK_SIZE = 64;
-    const uint32_t  MAX_PATH_LENGTH = 5;
+    const uint32_t  MAX_PATH_LENGTH = 10;
 
     int             width;
     int             height;

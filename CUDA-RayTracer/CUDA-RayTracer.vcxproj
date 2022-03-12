@@ -24,6 +24,7 @@
     <ClCompile Include="CudaHelpers.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="dScene.cpp" />
+    <ClCompile Include="dTexture.cpp" />
     <ClCompile Include="EnvironmentLight.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Geometry.cpp" />
@@ -63,6 +64,7 @@
     <ClInclude Include="dRandom.cuh" />
     <ClInclude Include="dRay.cuh" />
     <ClInclude Include="dScene.h" />
+    <ClInclude Include="dTexture.h" />
     <ClInclude Include="dTriangle.cuh" />
     <ClInclude Include="dVertex.cuh" />
     <ClInclude Include="EnvironmentLight.h" />

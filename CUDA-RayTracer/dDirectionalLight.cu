@@ -33,22 +33,22 @@ __device__ float dDirectionalLight::G(const Isect& isect) const
 
 __device__ bool dDirectionalLight::visible(const dRay& ray) const
 {
-	return false;
+	return true;
 }
 
 __device__ bool dDirectionalLight::visible(const dRay& ray, float& tmin, Isect& isect) const
 {
-	return false;
+	return true;
 }
 
 __device__ float dDirectionalLight::get_pdf(const Isect& isect) const
 {
-	return 5000.f;
+	return 1.f / (1000.f*1000.f*M_PI);
 }
 
 __device__ float dDirectionalLight::get_pdf(const Isect& isect, const dRay& ray) const
 {
-	return 5000.f;
+	return 1.f / (1000.f * 1000.f * M_PI);
 }
 
 __device__ bool dDirectionalLight::in_shadow(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& ray) const
