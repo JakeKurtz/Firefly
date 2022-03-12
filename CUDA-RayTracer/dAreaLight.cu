@@ -13,18 +13,17 @@ __device__ dAreaLight::dAreaLight(void) :
 	position = make_float3(0, 0, 0);
 	color = make_float3(1, 1, 1);
 	enable_shadows(true);
+	delta = false;
 }
 
 __device__ void dAreaLight::get_direction(const Isect& isect, float3& wi, float3& sample_point)
 {
 	sample_point = object_ptr->sample();
-	//float3 light_normal = object_ptr->get_normal(sample_point);
 	wi = normalize(sample_point - isect.position);
 };
 
 __device__ float3 dAreaLight::L(const Isect& isect, float3 wi, float3 sample_point)
 {
-	//return (emissive_L(material));
 	float3 light_normal = object_ptr->get_normal(sample_point);
 	float n_dot_d = dot(-light_normal, wi);
 

@@ -52,4 +52,9 @@ __device__ bool dLight::casts_shadows(void)
 __device__ void dLight::enable_shadows(bool b)
 {
 	shadows = b;
-};
+}
+__device__ bool dLight::is_delta()
+{
+	return delta;
+}
+;

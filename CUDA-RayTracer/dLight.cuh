@@ -27,6 +27,7 @@ public:
 	__device__ void scale_radiance(const float _ls);
 	__device__ bool casts_shadows(void);
 	__device__ void enable_shadows(bool b);
+	__device__ bool is_delta();
 
 	float		ls;
 	float3		color;
@@ -34,4 +35,6 @@ public:
 
 private:
 	bool shadows;
+protected:
+	bool delta;
 };

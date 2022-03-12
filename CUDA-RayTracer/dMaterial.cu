@@ -362,7 +362,6 @@ __device__ float3 BRDF_L(dLight** lights, const Isect& isect, const float3& wi, 
 
 	float r = get_roughness(isect);
 
-	//for (int i = 0; i < 5; i++) {
 	//int i = rand_int(0,4);
 
 	Li = lights[light_id]->L(isect, wi, sample_point);
@@ -378,6 +377,12 @@ __device__ float3 BRDF_L(dLight** lights, const Isect& isect, const float3& wi, 
 		spec_weight = power_heuristic(1, light_pdf, 1, spec_pdf);
 
 		if (light_pdf > 0.f && Li != make_float3(0)) {
+
+			if (lights[light_id]->is_delta()) { // delta_light
+				spec_weight = 1.f;
+				diff_weight = 1.f;
+			}
+
 			f = spec_f(isect, wi, wo) * n_dot_wi;
 			if (f != make_float3(0.f)) L += f * spec_weight * Li / light_pdf;
 
@@ -392,37 +397,39 @@ __device__ float3 BRDF_L(dLight** lights, const Isect& isect, const float3& wi, 
 	float tmin;
 
 	float3 wi_spec = spec_sample(isect, wo);
-	visibility_ray = dRay(isect.position, wi_spec);
-	n_dot_wi = dot(get_normal(isect), wi_spec);
-
-	if (n_dot_wi > 0.f && lights[light_id]->visible(visibility_ray, tmin, it)) {
-		spec_pdf = spec_get_pdf(get_normal(isect), wi_spec, wo, r);
-		light_pdf = lights[light_id]->get_pdf(isect);
-		spec_weight = power_heuristic(1, spec_pdf, 1, light_pdf);
-
-		f = spec_f(isect, wi_spec, wo) * n_dot_wi;
-
-		if (f != make_float3(0.f) && spec_pdf > 0.f && Li != make_float3(0)) {
-			L += f * Li * spec_weight / spec_pdf;
-		}
-	}
-
 	float3 wi_diff = diff_sample(isect);
-	visibility_ray = dRay(isect.position, wi_diff);
-	n_dot_wi = dot(get_normal(isect), wi_diff);
 
-	if (n_dot_wi > 0.f && lights[light_id]->visible(visibility_ray, tmin, it)) {
-		diff_pdf = diff_get_pdf();
-		light_pdf = lights[light_id]->get_pdf(isect);
-		diff_weight = power_heuristic(1, diff_pdf, 1, light_pdf);
+	if (!lights[light_id]->is_delta()) { // delta light
+		visibility_ray = dRay(isect.position, wi_spec);
+		n_dot_wi = dot(get_normal(isect), wi_spec);
 
-		f = diff_f(isect, wi_diff, wo) * n_dot_wi;
+		if (n_dot_wi > 0.f && lights[light_id]->visible(visibility_ray, tmin, it)) {
+			spec_pdf = spec_get_pdf(get_normal(isect), wi_spec, wo, r);
+			light_pdf = lights[light_id]->get_pdf(isect);
+			spec_weight = power_heuristic(1, spec_pdf, 1, light_pdf);
 
-		if (f != make_float3(0.f) && diff_pdf > 0.f && Li != make_float3(0)) {
-			L += f * Li * diff_weight / diff_pdf;
+			f = spec_f(isect, wi_spec, wo) * n_dot_wi;
+
+			if (f != make_float3(0.f) && spec_pdf > 0.f && Li != make_float3(0)) {
+				L += f * Li * spec_weight / spec_pdf;
+			}
+		}
+
+		visibility_ray = dRay(isect.position, wi_diff);
+		n_dot_wi = dot(get_normal(isect), wi_diff);
+
+		if (n_dot_wi > 0.f && lights[light_id]->visible(visibility_ray, tmin, it)) {
+			diff_pdf = diff_get_pdf();
+			light_pdf = lights[light_id]->get_pdf(isect);
+			diff_weight = power_heuristic(1, diff_pdf, 1, light_pdf);
+
+			f = diff_f(isect, wi_diff, wo) * n_dot_wi;
+
+			if (f != make_float3(0.f) && diff_pdf > 0.f && Li != make_float3(0)) {
+				L += f * Li * diff_weight / diff_pdf;
+			}
 		}
 	}
-	//}
 
 	if (random() < 0.5f) {
 		sample_dir = wi_diff;
@@ -431,7 +438,7 @@ __device__ float3 BRDF_L(dLight** lights, const Isect& isect, const float3& wi, 
 		sample_dir = wi_spec;
 	}
 
-	return (L/4.f);
+	return (L);
 }
 __device__ float3 BRDF_f(const Isect& isect, const float3& wi, const float3& wo)
 {
