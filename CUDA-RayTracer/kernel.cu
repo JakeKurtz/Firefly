@@ -115,8 +115,7 @@ void debug_kernel(
     dRay ray = camera->gen_ray(film, make_float2(x, y));
 
     Isect isect;
-    Isect isect_d;
-    intersect(nodes, triangles, ray, isect, isect_d);
+    intersect(nodes, triangles, ray, isect);
 
     float3 color = make_float3(0.f);
 
@@ -125,21 +124,22 @@ void debug_kernel(
             float3 lightdir, sample_point;
             lights[i]->get_direction(isect, lightdir, sample_point);
 
-            dRay shadow_ray = dRay(isect.position + isect.normal * SHADOW_OFFSET, lightdir);
+            dRay shadow_ray = dRay(isect.position + get_normal(isect) * SHADOW_OFFSET, lightdir);
 
-            float diff = fmaxf(dot(isect.normal, lightdir), 0.f);
+            float diff = fmaxf(dot(get_normal(isect), lightdir), 0.f);
 
             if (diff >= 0.f) {
                 if (!lights[i]->in_shadow(nodes, triangles, shadow_ray)) {
-                    color += (get_albedo(isect) * diff * 1.f) * lights[i]->L(isect);
+                    //color += (get_albedo(isect) * diff * 1.f) * lights[i]->L(isect);
                     //color = isect.normal * fmaxf(0.f, dot(isect.normal, lightdir));
                 }
             }
-        } 
+        }
+        color = get_normal(isect);
     }
 
-    color *= camera->exposure_time;
-    color /= (color + 1.0f);
+    //color *= camera->exposure_time;
+    //color /= (color + 1.0f);
 
     union pxl_rgbx_24 rgbx;
 
@@ -208,6 +208,8 @@ void wf_logic(
     if (pathLength > MAXPATHLENGTH || !paths->ext_isect[id].wasFound) {
         terminate = true;
     }
+
+    //if (!paths->ext_isect[id].wasFound) fb_accum[pixel_index] += make_float4(beta * make_float3(1.f), 0);
 
     if (pathLength == 1){
         for (int i = 0; i < 1; i++) {
@@ -378,7 +380,7 @@ void wf_extend(
 
     dRay ray = paths->ext_ray[id];
     Isect isect;
-    intersect(nodes, triangles, ray, isect, paths->ext_isect[id]);
+    intersect(nodes, triangles, ray, isect);
 
     Isect isect_light;
     float tmin_light;
@@ -445,7 +447,7 @@ void wf_mat_diffuse(
     paths->light_brdf[id] = diff_L(lights, isect, wi, wo, light_id, sample_point);
     paths->ext_brdf[id] = diff_f(isect, ext_dir, wo);
     paths->ext_pdf[id] = diff_get_pdf();
-    paths->ext_cosine[id] = fmaxf(0.0, dot(isect.normal, ext_dir));
+    paths->ext_cosine[id] = fmaxf(0.0, dot(get_normal(isect), ext_dir));
 
     uint32_t queueIndex = atomicAggInc(&queues->queue_extension_length);
     queues->queue_extension[queueIndex] = id;
@@ -479,8 +481,8 @@ void wf_mat_cook(
     paths->ext_ray[id] = ext_ray;
     paths->light_brdf[id] = spec_L(lights, isect, wi, wo, light_id, sample_point, get_roughness(isect));
     paths->ext_brdf[id] = spec_f(isect, ext_dir, wo);
-    paths->ext_pdf[id] = spec_get_pdf(isect.normal, ext_dir, wo, get_roughness(isect));
-    paths->ext_cosine[id] = fmaxf(0.0, dot(isect.normal, ext_dir));
+    paths->ext_pdf[id] = spec_get_pdf(get_normal(isect), ext_dir, wo, get_roughness(isect));
+    paths->ext_cosine[id] = fmaxf(0.0, dot(get_normal(isect), ext_dir));
 
     paths->ext_brdf_type[id] = BSDF::specularBounce;
 
@@ -517,7 +519,7 @@ void wf_mat_mix(
     paths->ext_brdf[id] = BRDF_f(isect, ext_dir, wo);
     paths->ext_pdf[id] = BRDF_pdf(isect, ext_dir, wo);
     paths->ext_ray[id] = dRay(isect.position, ext_dir);
-    paths->ext_cosine[id] = fmaxf(0.0, dot(isect.normal, ext_dir));
+    paths->ext_cosine[id] = fmaxf(0.0, dot(get_normal(isect), ext_dir));
 
     uint32_t queueIndex = atomicAggInc(&queues->queue_extension_length);
     queues->queue_extension[queueIndex] = id;

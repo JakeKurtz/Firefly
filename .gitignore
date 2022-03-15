@@ -361,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/models/DRAGON_3.glb
+/models/dragon_xyz.glb
+/models/kitchen.glb
+/models/mat_test.glb
+/models/bust.glb
+/models/bust/scene.bin
+/models/bust/scene.gltf
+/models/bust/textures/La-tradicio_baseColor.jpeg
+/models/bust/textures/La-tradicio_normal.png

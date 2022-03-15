@@ -169,6 +169,9 @@ void main()
     vec3 mapped = ((L * (1.f-shadow)) + ambient + emissive) * cam_exposure;
 
     FragColor = vec4(reinhard(mapped), 1.0);
+    
+    //FragColor = texture(gNormal, TexCoords);
+
     //vec4 FragPosLightSpace = lightSpaceMatrix[0] * vec4(FragPos, 1.f);
     //FragColor = vec4(vec3(pcf_shadow(FragPosLightSpace, 0)), 1.0) * cam_exposure;
     //vec4 FragPosLightSpace = lightSpaceMatrix[0] * vec4(FragPos, 1.f);

@@ -4,6 +4,7 @@
 #include "dMath.cuh"
 #include "dLight.cuh"
 #include "dRay.cuh"
+#include "dMatrix.cuh"
 
 __device__ float3 get_albedo(const Isect& isect) {
 	int id = isect.material->baseColorTexture;
@@ -26,13 +27,13 @@ __device__ float get_roughness(const Isect& isect) {
 		float u = isect.texcoord.x;
 		float v = isect.texcoord.y;
 		float4 tex = tex2DLod<float4>(isect.material->metallicRoughnessTexture, u, v, 0);
-		r = tex.y;
+		r = fmaxf(tex.y, 0.01f);
 	}
 	else if (isect.material->roughnessTexture != -1 ){
 		float u = isect.texcoord.x;
 		float v = isect.texcoord.y;
 		float4 tex = tex2DLod<float4>(isect.material->roughnessTexture, u, v, 0);
-		r = tex.x;
+		r = fmaxf(tex.x, 0.01f);
 	}
 	else {
 		r = isect.material->roughnessFactor;
@@ -66,8 +67,21 @@ __device__ float3 get_normal(const Isect& isect) {
 	else {
 		float u = isect.texcoord.x;
 		float v = isect.texcoord.y;
-		float4 tex = tex2DLod<float4>(id, u, v, 0);
-		normal = make_float3(tex.x, tex.y, tex.z);
+		
+		float3 T = isect.tangent;
+		float3 B = isect.bitangent;
+		float3 N = isect.normal;
+
+		Matrix4x4 TBN = Matrix4x4(
+			T.x, T.y, T.z, 0.f,
+			B.x, B.y, B.z, 0.f,
+			N.x, N.y, N.z, 0.f,
+			0.f, 0.f, 0.f, 1.f
+		);
+		
+		float4 n = tex2DLod<float4>(id, u, v, 0);
+		n = n * 2.0 - 1.0;
+		normal = normalize(TBN * make_float3(n.x, n.y, n.z));
 	}
 	return normal;
 }
@@ -132,7 +146,7 @@ __device__ float3 diff_sample(const Isect& isect)
 	float z = sinTheta * sin(phi);
 	float3 sp = make_float3(x, e0, z);
 
-	float3 N = isect.normal;//get_normal(isect);
+	float3 N = get_normal(isect);
 	float3 T = normalize(cross(N, get_orthogonal_vec(N)));
 	float3 B = normalize(cross(N, T));
 
@@ -171,8 +185,7 @@ __device__ float3 diff_L(dLight** lights, const Isect& isect, const float3& wi, 
 
 	Li = lights[light_id]->L(isect, wi, sample_point);
 
-	float n_dot_wi = dot(isect.normal, wi);
-	//float n_dot_wi = dot(get_normal(isect), wi);
+	float n_dot_wi = dot(get_normal(isect), wi);
 	if (n_dot_wi > 0.f) {
 
 		brdf_pdf = diff_get_pdf();
@@ -191,12 +204,11 @@ __device__ float3 diff_L(dLight** lights, const Isect& isect, const float3& wi, 
 	dRay visibility_ray(isect.position, wi_brdf);
 	Isect isect_2;
 	float tmin;
-	//n_dot_wi = dot(get_normal(isect), wi_brdf);
-	n_dot_wi = dot(isect.normal, wi_brdf);
+
+	n_dot_wi = dot(get_normal(isect), wi_brdf);
 
 	if (n_dot_wi > 0.f && lights[light_id]->visible(visibility_ray, tmin, isect_2)) {
 
-		//brdf_pdf = spec_get_pdf(get_normal(isect), wi_brdf, wo, r);
 		brdf_pdf = diff_get_pdf();
 		light_pdf = lights[light_id]->get_pdf(isect);
 		weight = power_heuristic(1, brdf_pdf, 1, light_pdf);
@@ -226,7 +238,7 @@ __device__ float3 spec_sample(const Isect& isect, const float3& wo)
 		sin(theta) * sin(phi)
 	);
 
-	float3 N = isect.normal;//get_normal(isect);
+	float3 N = get_normal(isect);
 	float3 T = normalize(cross(N, get_orthogonal_vec(N)));
 	float3 B = normalize(cross(N, T));
 
@@ -256,7 +268,7 @@ __device__ float3 spec_f(const Isect& isect, const float3& wi, const float3& wo)
 
 	float3 L = make_float3(0, 0, 0);
 
-	float3 n = isect.normal;//get_normal(isect);
+	float3 n = get_normal(isect);
 	float3 wh = normalize(wo + wi);
 
 	double n_dot_wi = fmaxf(dot(n, wi), 0.f);
@@ -286,7 +298,7 @@ __device__ float3 spec_sample_f(const Isect& isect, const float3& wo, float3& wi
 		sin(theta) * sin(phi)
 	);
 
-	float3 N = isect.normal;//get_normal(isect);
+	float3 N = get_normal(isect);
 	float3 T = normalize(cross(N, get_orthogonal_vec(N)));
 	float3 B = normalize(cross(N, T));
 
@@ -308,12 +320,10 @@ __device__ float3 spec_L(dLight** lights, const Isect& isect, const float3& wi, 
 
 	Li = lights[light_id]->L(isect, wi, sample_point);
 
-	float n_dot_wi = dot(isect.normal, wi);
-	//float n_dot_wi = dot(get_normal(isect), wi);
+	float n_dot_wi = dot(get_normal(isect), wi);
 	if (n_dot_wi > 0.f) {
 
-		brdf_pdf = spec_get_pdf(isect.normal, wi, wo, r);
-		//brdf_pdf = spec_get_pdf(get_normal(isect), wi, wo, r);
+		brdf_pdf = spec_get_pdf(get_normal(isect), wi, wo, r);
 		light_pdf = lights[light_id]->get_pdf(isect);
 		weight = power_heuristic(1, light_pdf, 1, brdf_pdf);
 
@@ -329,13 +339,10 @@ __device__ float3 spec_L(dLight** lights, const Isect& isect, const float3& wi, 
 	dRay visibility_ray(isect.position, wi_brdf);
 	Isect isect_2;
 	float tmin;
-	//n_dot_wi = dot(get_normal(isect), wi_brdf);
-	n_dot_wi = dot(isect.normal, wi_brdf);  
+	n_dot_wi = dot(get_normal(isect), wi_brdf);
 
 	if (n_dot_wi > 0.f && lights[light_id]->visible(visibility_ray, tmin, isect_2)) {
-
-		//brdf_pdf = spec_get_pdf(get_normal(isect), wi_brdf, wo, r);
-		brdf_pdf = spec_get_pdf(isect.normal, wi_brdf, wo, r);
+		brdf_pdf = spec_get_pdf(get_normal(isect), wi_brdf, wo, r);
 		light_pdf = lights[light_id]->get_pdf(isect);
 		weight = power_heuristic(1, brdf_pdf, 1, light_pdf);
 
@@ -361,16 +368,17 @@ __device__ float3 BRDF_L(dLight** lights, const Isect& isect, const float3& wi, 
 	double light_pdf, weight;
 
 	float r = get_roughness(isect);
+	float3 n = get_normal(isect);
 
 	//int i = rand_int(0,4);
 
 	Li = lights[light_id]->L(isect, wi, sample_point);
 
-	float n_dot_wi = dot(get_normal(isect), wi);
+	float n_dot_wi = dot(n, wi);
 
 	if (n_dot_wi > 0.f) {	
 		diff_pdf = diff_get_pdf();
-		spec_pdf = spec_get_pdf(get_normal(isect), wi, wo, r);
+		spec_pdf = spec_get_pdf(n, wi, wo, r);
 		light_pdf = lights[light_id]->get_pdf(isect);
 
 		diff_weight = power_heuristic(1, light_pdf, 1, diff_pdf);
@@ -378,7 +386,7 @@ __device__ float3 BRDF_L(dLight** lights, const Isect& isect, const float3& wi, 
 
 		if (light_pdf > 0.f && Li != make_float3(0)) {
 
-			if (lights[light_id]->is_delta()) { // delta_light
+			if (lights[light_id]->is_delta()) {
 				spec_weight = 1.f;
 				diff_weight = 1.f;
 			}
@@ -399,7 +407,7 @@ __device__ float3 BRDF_L(dLight** lights, const Isect& isect, const float3& wi, 
 	float3 wi_spec = spec_sample(isect, wo);
 	float3 wi_diff = diff_sample(isect);
 
-	if (!lights[light_id]->is_delta()) { // delta light
+	if (!lights[light_id]->is_delta()) {
 		visibility_ray = dRay(isect.position, wi_spec);
 		n_dot_wi = dot(get_normal(isect), wi_spec);
 
@@ -446,7 +454,7 @@ __device__ float3 BRDF_f(const Isect& isect, const float3& wi, const float3& wo)
 }
 __device__ float BRDF_pdf(const Isect& isect, const float3 wi, const float3 wo)
 {
-	float spec_pdf = spec_get_pdf(isect.normal, wi, wo, get_roughness(isect));
+	float spec_pdf = spec_get_pdf(get_normal(isect), wi, wo, get_roughness(isect));
 	float diff_pdf = diff_get_pdf();
 
 	return 0.5 * (spec_pdf + diff_pdf);

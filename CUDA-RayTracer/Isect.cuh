@@ -7,6 +7,8 @@ struct Isect
 {
     float3			position;
     float3			normal;
+    float3			tangent;
+    float3			bitangent;
     float2			texcoord;
     float			distance = K_HUGE;
     dMaterial*      material = nullptr;

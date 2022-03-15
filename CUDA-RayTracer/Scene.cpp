@@ -112,6 +112,8 @@ Mesh* Scene::load_mesh(aiMesh* mesh, aiMatrix4x4 accTransform, const aiScene* sc
     vector<Vertex> vertices;
     vector<unsigned int> indices;
 
+    glm::mat4 mat = glm::transpose(glm::inverse(mat4_cast(accTransform)));
+
     for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
         Vertex vertex;
         glm::vec3 vector;
@@ -127,7 +129,8 @@ Mesh* Scene::load_mesh(aiMesh* mesh, aiMatrix4x4 accTransform, const aiScene* sc
             vector.x = mesh->mNormals[i].x;
             vector.y = mesh->mNormals[i].y;
             vector.z = mesh->mNormals[i].z;
-            vertex.normal = glm::normalize(glm::vec3(mat4_cast(accTransform) * glm::vec4(vector, 1)));
+
+            vertex.normal = glm::normalize(glm::vec3(mat * glm::vec4(vector, 1)));
         }
 
         // texture coordinates
@@ -141,13 +144,13 @@ Mesh* Scene::load_mesh(aiMesh* mesh, aiMatrix4x4 accTransform, const aiScene* sc
             vector.x = mesh->mTangents[i].x;
             vector.y = mesh->mTangents[i].y;
             vector.z = mesh->mTangents[i].z;
-            vertex.tangent = glm::normalize(glm::vec3(mat4_cast(accTransform) * glm::vec4(vector, 1)));
+            vertex.tangent = glm::normalize(glm::vec3(mat * glm::vec4(vector, 1)));
 
             // bitangent
             vector.x = mesh->mBitangents[i].x;
             vector.y = mesh->mBitangents[i].y;
             vector.z = mesh->mBitangents[i].z;
-            vertex.bitangent = glm::normalize(glm::vec3(mat4_cast(accTransform) * glm::vec4(vector, 1)));
+            vertex.bitangent = glm::normalize(glm::vec3(mat * glm::vec4(vector, 1)));
         }
         else {
             vertex.texCoords = glm::vec2(0.0f, 0.0f);

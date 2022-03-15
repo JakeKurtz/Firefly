@@ -92,11 +92,15 @@ __device__ bool dTriangle::hit(const dRay& ray, float& tmin, Isect& isect) const
 	bool hit = intersect(ray, u, v, tmin);
 
 	float3 normal = normalize(u * v1.normal + v * v2.normal + (1 - u - v) * v0.normal);
+	float3 tangent = normalize(u * v1.tangent + v * v2.tangent + (1 - u - v) * v0.tangent);
+	float3 bitangent = normalize(u * v1.bitangent + v * v2.bitangent + (1 - u - v) * v0.bitangent);
 	float2 texcoord = u * v1.texcoords + v * v2.texcoords + (1 - u - v) * v0.texcoords;
 
 	if (tmin < 0) return false;
 
 	isect.normal = normal;
+	isect.tangent = tangent;
+	isect.bitangent = bitangent;
 	isect.texcoord = texcoord;
 	isect.position = ray.o + (tmin * ray.d);
 
@@ -133,11 +137,13 @@ __device__ bool dTriangle::shadow_hit(const dRay& ray, float& tmin) const
 	return true;
 };
 
-__device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& __restrict ray, Isect& isect, Isect& isect_self)
+__device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& __restrict ray, Isect& isect)
 {
 	float		t;
 	int			triangle_id;
 	float3		normal;
+	float3		tangent;
+	float3		bitangent;
 	float2		texcoord;
 	float3		local_hit_point;
 	float		tmin = K_HUGE;
@@ -161,13 +167,14 @@ __device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles
 				if (!__any(searching)) {
 					// Intersect ray with primitives in leaf BVH node //
 					for (int i = 0; i < node->nPrimitives; ++i) {
-						int triangle_id = node->primitivesOffset + i;
-						if (triangles[triangle_id].hit(ray, t, isect) && (t < tmin) && (t > 0.00001) && triangle_id != isect_self.triangle_id) {
+						if (triangles[node->primitivesOffset + i].hit(ray, t, isect) && (t < tmin)) {
 							isect.wasFound = true;
 							triangle_id = node->primitivesOffset + i;
-							isect.material = triangles[triangle_id].material;
+							isect.material = triangles[node->primitivesOffset + i].material;
 							tmin = t;
 							normal = isect.normal;
+							tangent = isect.tangent;
+							bitangent = isect.bitangent;
 							texcoord = isect.texcoord;
 							local_hit_point = isect.position;
 						}
@@ -198,6 +205,8 @@ __device__ void intersect(const LinearBVHNode* nodes, const dTriangle* triangles
 		isect.distance = tmin;
 		isect.triangle_id = triangle_id;
 		isect.normal = normal;
+		isect.tangent = tangent;
+		isect.bitangent = bitangent;
 		isect.texcoord = texcoord;
 		isect.position = local_hit_point;
 	}
@@ -220,7 +229,8 @@ __device__ bool intersect_shadows(const LinearBVHNode* nodes, const dTriangle* t
 			if (node->nPrimitives > 0) {
 				// Intersect ray with primitives in leaf BVH node //
 				for (int i = 0; i < node->nPrimitives; ++i) {
-					if (triangles[node->primitivesOffset + i].shadow_hit(ray, t) && (t < tmin) && (t > 0.00001)) {
+					int triangle_id = node->primitivesOffset + i;
+					if (triangles[node->primitivesOffset + i].shadow_hit(ray, t) && (t < tmin)) {
 						return (true);
 					}
 				}

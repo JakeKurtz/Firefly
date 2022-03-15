@@ -195,8 +195,8 @@ void dScene::load_materials()
 
         checkCudaErrors(cudaMallocManaged((void**)&(d_material_list[i]), sizeof(dMaterial*)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(dMaterial*)/1000.f + "kB)" + " for dMaterial.");
         d_material_list[i]->baseColorFactor = float3_cast(material.second->baseColorFactor);
-        d_material_list[i]->roughnessFactor = 1.f;//material.second->roughnessFactor;
-        d_material_list[i]->metallicFactor = material.second->metallicFactor;
+        d_material_list[i]->roughnessFactor = 0.2f;//material.second->roughnessFactor;
+        d_material_list[i]->metallicFactor = 0.f;//material.second->metallicFactor;
         d_material_list[i]->emissiveColorFactor = float3_cast(material.second->emissiveColorFactor);
         d_material_list[i]->fresnel = make_float3(0.04f);
         d_material_list[i]->ks = 1.f;
@@ -205,10 +205,10 @@ void dScene::load_materials()
         d_material_list[i]->emissive = false;
 
         d_material_list[i]->baseColorTexture = load_texture(material.second->baseColorTexture);
-        d_material_list[i]->roughnessTexture = load_texture(material.second->roughnessTexture);
         d_material_list[i]->normalTexture = load_texture(material.second->normalTexture);
         d_material_list[i]->metallicRoughnessTexture = load_texture(material.second->metallicRoughnessTexture);
-        d_material_list[i]->metallicFactor = load_texture(material.second->metallicRoughnessTexture);
+        d_material_list[i]->roughnessTexture = load_texture(material.second->roughnessTexture);
+        d_material_list[i]->metallicTexture = load_texture(material.second->metallicTexture);
 
         i++;
     }
@@ -321,7 +321,7 @@ void dScene::load_lights()
     dMaterial** materials;
 
     // allocate memory (host)
-    nmb_dir_lights = h_scene->get_lights().size();
+    nmb_dir_lights = 1;//h_scene->get_lights().size();
     nmb_area_lights = 0;
 
     size_t sizeof_directions = nmb_dir_lights * sizeof(float3);
@@ -352,7 +352,7 @@ void dScene::load_lights()
     }
     
     add_directional_lights(directions, materials, h_scene->get_lights().size(), d_lights);
-
+    
     // Area Lights
 
     //dMaterial** materials;
