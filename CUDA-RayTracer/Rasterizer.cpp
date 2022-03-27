@@ -11,6 +11,10 @@ Rasterizer::Rasterizer(int _SCR_WIDTH, int _SCR_HEIGHT) :
     SCR_WIDTH = _SCR_WIDTH;
     SCR_HEIGHT = _SCR_HEIGHT;
 
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_3D);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
     //blueNoise = new Texture("LDR_RG01_0.png", "../textures/", "noise", GL_TEXTURE_2D);
     cascadeShadowMapTexArray = new TextureArray(shadow_cascade_size, shadow_cascade_size, 4, false);
     cascadeShadowMapTexArray_tmptarget = new TextureArray(shadow_cascade_size, shadow_cascade_size, 4, false);
@@ -41,6 +45,9 @@ void Rasterizer::draw(Scene* scene)
         //obj->updateTRS();
 
     // ------ GEOMETRY PASS ------ //
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     gBuffer->bind();
 
@@ -86,7 +93,7 @@ void Rasterizer::draw(Scene* scene)
 
     // ------ BACKGROUND ------ //
 
-    scene->environment_light->draw_background(scene->camera);
+    //scene->environment_light->draw_background(scene->camera);
 }
 
 void Rasterizer::drawGeometry(Scene* scene)

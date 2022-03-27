@@ -5,27 +5,16 @@
 #include "dMatrix.cuh"
 #include "Rectangle.cuh"
 
+#include <stb_image.h>
+#include "dTexture.cuh"
+
 #define LOG
 
 void reorder_primitives(dTriangle triangles[], int ordered_prims[], int size);
 void process_mesh(dVertex vertices[], unsigned int indicies[], dMaterial* materials[], int mat_index, int offset, int size, dTriangle* triangles);
 void add_directional_lights(float3* directions, dMaterial** materials, int size, dLight** d_lights);
 void add_area_lights(_Rectangle** objs, dMaterial** materials, int size, dLight** d_lights);
-
-uint get_mip_map_levels(cudaExtent size)
-{
-    size_t sz = MAX(MAX(size.width, size.height), size.depth);
-
-    uint levels = 0;
-
-    while (sz)
-    {
-        sz /= 2;
-        levels++;
-    }
-
-    return levels;
-}
+void add_environment_light(cudaTextureObject_t hrd_texture, int tex_width, int tex_height, float3 color, dEnvironmentLight* d_environment_light, dLight** d_lights);
 
 dScene::dScene(Scene* h_scene)
 {
@@ -58,6 +47,11 @@ int dScene::get_nmb_lights()
     return nmb_lights;
 }
 
+dEnvironmentLight* dScene::get_environment_light()
+{
+    return d_environment_light;
+}
+
 void dScene::update()
 {
     update_camera();
@@ -77,6 +71,7 @@ void dScene::load_scene()
     init_BVH_triangle_info();
     init_BVH();
     load_nodes();
+
 #ifdef LOG
     stop = clock();
     double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
@@ -195,8 +190,8 @@ void dScene::load_materials()
 
         checkCudaErrors(cudaMallocManaged((void**)&(d_material_list[i]), sizeof(dMaterial*)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(dMaterial*)/1000.f + "kB)" + " for dMaterial.");
         d_material_list[i]->baseColorFactor = float3_cast(material.second->baseColorFactor);
-        d_material_list[i]->roughnessFactor = 0.2f;//material.second->roughnessFactor;
-        d_material_list[i]->metallicFactor = 0.f;//material.second->metallicFactor;
+        d_material_list[i]->roughnessFactor = material.second->roughnessFactor;
+        d_material_list[i]->metallicFactor = material.second->metallicFactor;
         d_material_list[i]->emissiveColorFactor = float3_cast(material.second->emissiveColorFactor);
         d_material_list[i]->fresnel = make_float3(0.04f);
         d_material_list[i]->ks = 1.f;
@@ -204,11 +199,11 @@ void dScene::load_materials()
         d_material_list[i]->radiance = 0.f;
         d_material_list[i]->emissive = false;
 
-        d_material_list[i]->baseColorTexture = load_texture(material.second->baseColorTexture);
-        d_material_list[i]->normalTexture = load_texture(material.second->normalTexture);
-        d_material_list[i]->metallicRoughnessTexture = load_texture(material.second->metallicRoughnessTexture);
-        d_material_list[i]->roughnessTexture = load_texture(material.second->roughnessTexture);
-        d_material_list[i]->metallicTexture = load_texture(material.second->metallicTexture);
+        d_material_list[i]->baseColorTexture = load_texture_uchar(material.second->baseColorTexture);
+        d_material_list[i]->normalTexture = load_texture_uchar(material.second->normalTexture);
+        d_material_list[i]->metallicRoughnessTexture = load_texture_uchar(material.second->metallicRoughnessTexture);
+        d_material_list[i]->roughnessTexture = load_texture_uchar(material.second->roughnessTexture);
+        d_material_list[i]->metallicTexture = load_texture_uchar(material.second->metallicTexture);
 
         i++;
     }
@@ -216,98 +211,6 @@ void dScene::load_materials()
         std::cerr << "\t materials completed." << endl;
     #endif
     materials_loaded = true;
-}
-
-int dScene::load_texture(Texture* tex) 
-{
-    // TODO: make a dTexture class. This code is not great :( Need a better way of handling different texture formats/internal formats/dimensions.
-    if (tex != NULL) {
-        cudaTextureObject_t textureObject;
-        cudaMipmappedArray_t mipmapArray;
-        auto size = make_cudaExtent(tex->width, tex->height, 0);
-        uint levels = get_mip_map_levels(size);
-
-        cudaChannelFormatDesc desc;
-        size_t pitch;
-
-        if (tex->nrComponents == 3) {
-            pitch = size.width * sizeof(uchar4);
-            desc = cudaCreateChannelDesc<uchar4>();
-            checkCudaErrors(cudaMallocMipmappedArray(&mipmapArray, &desc, size, levels));
-
-            unsigned char* data = (unsigned char*)malloc(tex->width * tex->height * sizeof(uchar4));
-
-            int i = 0;
-            int j = 0;
-            while (i < tex->width * tex->height * 4) {
-                data[i] = tex->data[j];
-                data[i + 1] = tex->data[j + 1];
-                data[i + 2] = tex->data[j + 2];
-                data[i + 3] = 0;
-
-                i += 4;
-                j += 3;
-            }
-            cudaArray_t level0;
-            checkCudaErrors(cudaGetMipmappedArrayLevel(&level0, mipmapArray, 0));
-
-            cudaMemcpy3DParms copyParams = { 0 };
-            copyParams.srcPtr = make_cudaPitchedPtr(data, pitch, size.width, size.height);
-            copyParams.dstArray = level0;
-            copyParams.extent = size;
-            copyParams.extent.depth = 1;
-            copyParams.kind = cudaMemcpyHostToDevice;
-            checkCudaErrors(cudaMemcpy3D(&copyParams));
-        }
-        else {
-            pitch = size.width * sizeof(uchar4);
-            desc = cudaCreateChannelDesc<uchar4>();
-            checkCudaErrors(cudaMallocMipmappedArray(&mipmapArray, &desc, size, levels));
-
-            cudaArray_t level0;
-            checkCudaErrors(cudaGetMipmappedArrayLevel(&level0, mipmapArray, 0));
-
-            cudaMemcpy3DParms copyParams = { 0 };
-            copyParams.srcPtr = make_cudaPitchedPtr(tex->data, pitch, size.width, size.height);
-            copyParams.dstArray = level0;
-            copyParams.extent = size;
-            copyParams.extent.depth = 1;
-            copyParams.kind = cudaMemcpyHostToDevice;
-            checkCudaErrors(cudaMemcpy3D(&copyParams));
-        }
-
-        // compute rest of mipmaps based on level 0
-        //generateMipMaps(mipmapArray, size);
-
-        // generate bindless texture object
-
-        cudaResourceDesc resDescr;
-        memset(&resDescr, 0, sizeof(cudaResourceDesc));
-
-        resDescr.resType = cudaResourceTypeMipmappedArray;
-        resDescr.res.mipmap.mipmap = mipmapArray;
-
-        cudaTextureDesc texDescr;
-        memset(&texDescr, 0, sizeof(cudaTextureDesc));
-
-        texDescr.normalizedCoords = 1;
-        texDescr.filterMode = cudaFilterModeLinear;
-        texDescr.mipmapFilterMode = cudaFilterModeLinear;
-
-        texDescr.addressMode[0] = cudaAddressModeWrap;
-        texDescr.addressMode[1] = cudaAddressModeWrap;
-        texDescr.addressMode[2] = cudaAddressModeWrap;
-
-        texDescr.maxMipmapLevelClamp = float(levels - 1);
-
-        texDescr.readMode = cudaReadModeNormalizedFloat;
-
-        checkCudaErrors(cudaCreateTextureObject(&textureObject, &resDescr, &texDescr, NULL));
-        return textureObject;
-    }
-    else {
-        return -1;
-    }
 }
 
 void dScene::load_lights()
@@ -322,13 +225,13 @@ void dScene::load_lights()
 
     // allocate memory (host)
     nmb_dir_lights = 1;//h_scene->get_lights().size();
-    nmb_area_lights = 0;
+    nmb_area_lights = 1;
 
     size_t sizeof_directions = nmb_dir_lights * sizeof(float3);
     size_t sizeof_positions = nmb_pnt_lights * sizeof(float3);
     size_t sizeof_objs = nmb_area_lights * sizeof(_Rectangle*);
 
-    nmb_lights = nmb_dir_lights + nmb_pnt_lights + nmb_area_lights;
+    nmb_lights = nmb_dir_lights + nmb_pnt_lights + nmb_area_lights + 1;
 
     size_t sizeof_materials = nmb_lights * sizeof(dMaterial*);
     size_t sizeof_lights = nmb_lights * sizeof(dLight*);
@@ -338,6 +241,10 @@ void dScene::load_lights()
     checkCudaErrors(cudaMallocManaged((void**)&objs, sizeof_objs), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof_objs/1000.f + "kB)" + " for object list.");
     checkCudaErrors(cudaMallocManaged((void**)&materials, sizeof_materials), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof_materials/1000.f + "kB)" + " for material list.");
     
+#ifdef LOG
+    std::cerr << "\t loading directional lights." << endl;
+#endif
+
     int i = 0;
     for (auto light : h_scene->get_lights())
     {
@@ -355,8 +262,10 @@ void dScene::load_lights()
     
     // Area Lights
 
-    //dMaterial** materials;
-    /*
+#ifdef LOG
+    std::cerr << "\t loading area lights." << endl;
+#endif
+    
     checkCudaErrors(cudaMallocManaged((void**)&(materials[0]), sizeof(dMaterial*)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(dMaterial*)\1000.f + "kB)" + " for dMaterial.");
     materials[0]->radiance = 125.f;
     materials[0]->emissiveColorFactor = make_float3(1.f);
@@ -366,7 +275,26 @@ void dScene::load_lights()
     objs[0] = new _Rectangle(make_float3(-0.5f, 100.f, -0.5f), make_float3(1.f, 0.f, 0.f), make_float3(0.f, 0.f, 1.f), make_float3(0.f, 1.f, 0.f));
 
     add_area_lights(objs, materials, 1, d_lights);
-    */
+
+    // Environment Light //
+
+#ifdef LOG
+    std::cerr << "\t loading environment light." << endl;
+#endif
+
+    float3 color;
+    cudaTextureObject_t hrd_texture;
+
+    checkCudaErrors(cudaMallocManaged((void**)&d_environment_light, sizeof(dEnvironmentLight)), "CUDA ERROR: failed to allocate memory " + "(" + (float)sizeof(dEnvironmentLight) / 1000.f + "kB)" + " for dEnvironmentLight.");
+
+    std::string filepath = h_scene->environment_light->get_texture_filepath();
+    int tex_width = h_scene->environment_light->get_tex_width();
+    int tex_height = h_scene->environment_light->get_tex_height();
+
+    color = float3_cast(h_scene->environment_light->get_color());
+    hrd_texture = load_texture_float(filepath);
+
+    add_environment_light(hrd_texture, tex_width, tex_height, color, d_environment_light, d_lights);
 }
 
 void dScene::load_camera()

@@ -14,8 +14,8 @@
 
 const char* glsl_version = "#version 330 core";
 
-int width = 1024;
-int height = 1024;
+int width = 1000;
+int height = 1000;
 
 int render_mode = 0;
 
@@ -35,7 +35,7 @@ static bool show_another_window = false;
 static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 glm::vec3 background_color = glm::vec3(0.0f);
 
-PerspectiveCamera* camera = new PerspectiveCamera(glm::vec3(3.66268253, 1.98525786, -5.15738964), (float)width / (float)height, glm::radians(45.f), 0.01f, 10000.f);
+PerspectiveCamera* camera = new PerspectiveCamera(glm::vec3(0.289340049, 4.11911869, 10.5660067), (float)width / (float)height, glm::radians(45.f), 0.01f, 10000.f);
 
 static void glfw_error_callback(int error, const char* description);
 static void glfw_window_size_callback(GLFWwindow* window, int width, int height);
@@ -216,6 +216,7 @@ int main(int argc, char** argv)
     imgui_init(&window);
 
     EnvironmentLight* color_environmentLight = new EnvironmentLight(glm::vec3(0.f));
+    EnvironmentLight* environmentLight = new EnvironmentLight("../hrdi/dresden_station_night_4k.hdr");
 
     DirectionalLight* light_1 = new DirectionalLight();
     light_1->setIntensity(25.f);
@@ -228,22 +229,17 @@ int main(int argc, char** argv)
     light_2->setColor(glm::vec3(1.f));
 
     DirectionalLight* light_3 = new DirectionalLight();
-    light_3->setIntensity(25.f);
+    light_3->setIntensity(0.f);
     light_3->setDirection(glm::vec3(10.f, 10.f, -10.f) - glm::vec3(0.f, 0, 0.f));
     light_3->setColor(glm::vec3(1.f));
 
     Scene* s = new Scene();
-    //s->load("../models/test_scene.glb");
-    //s->load("../models/bunny.glb");
-    //s->load("../models/mat_test.glb");
-    //s->load("../models/kitchen.glb");
-    //s->load("../models/monkey.glb");
-    s->load("../models/dragon_xyz.glb");
+    s->load("../models/scene_show_off_spheres.glb");
     //s->add_light(light_1);
     //s->add_light(light_2);
     s->add_light(light_3);
 
-    s->set_environment_light(color_environmentLight);
+    s->set_environment_light(environmentLight);
     s->set_camera(camera);
 
     dScene* ds = new dScene(s);

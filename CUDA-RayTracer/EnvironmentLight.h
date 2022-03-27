@@ -411,5 +411,23 @@ public:
         build_irradianceMap();
         build_prefilterMap();
     }
+
+    std::string get_texture_filepath() {
+        return hdri_enviromentMap->filepath;
+    }
+
+    glm::vec3 get_color() {
+        return color;
+    }
+
+    int get_tex_width() 
+    {
+        return hdri_enviromentMap->width;
+    }
+
+    int get_tex_height() 
+    {
+        return hdri_enviromentMap->height;
+    }
 };
 

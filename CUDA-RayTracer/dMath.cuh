@@ -97,6 +97,9 @@ __constant__ const float M_LN10 = 2.30258509299404568401799145468436421;
 // Pi, the ratio of a circle's circumference to its diameter.
 __constant__ const float M_PI = 3.14159265358979323846264338327950288;
 
+// 2pi
+__constant__ const float M_2PI = 6.28318530717958647692528676655900576;
+
 // Pi divided by two (pi/2)
 __constant__ const float M_PI_2 = 1.57079632679489661923132169163975144;
 
@@ -105,6 +108,12 @@ __constant__ const float M_PI_4 = 0.785398163397448309615660845819875721;
 
 // The reciprocal of pi (1/pi)
 __constant__ const float M_1_PI = 0.318309886183790671537767526745028724;
+
+// The reciprocal of 2pi (1/2pi)
+__constant__ const float M_1_2PI = 0.1591549430918953357688837633725143620;
+
+// The reciprocal of 4pi (1/4pi)
+__constant__ const float M_1_4PI = 0.079577471545947667884441881686257181;
 
 // Two times the reciprocal of pi (2/pi)
 __constant__ const float M_2_PI = 0.636619772367581343075535053490057448;
@@ -1470,5 +1479,31 @@ static inline __device__ void createCoordinateSystem(const float3& N, float3& T,
 
     return glm::mat3(T, N, B);
 }*/
+
+static inline __device__ float2 sample_spherical_map(float3 d)
+{
+    float2 uv = make_float2(atan2(d.z, d.x), asin(d.y));
+    uv *= make_float2(M_1_2PI, M_1_PI);
+    uv += 0.5;
+    return uv;
+}
+
+static inline __device__ float3 sample_spherical_direction(float2 uv)
+{
+	float theta = M_2PI * uv.x;
+	float phi = M_PI * uv.y;
+
+	float x = cos(theta) * sin(phi);
+	float y = cos(phi);
+	float z = sin(theta) * sin(phi);
+
+    return -make_float3(x,y,z);
+}
+
+static inline __device__ float luminance(float3 color)
+{
+    //return (0.2126 * color.x + 0.7152 * color.y + 0.0722 * color.z);
+    return (0.299 * color.x + 0.587 * color.y + 0.114 * color.z);
+}
 
 #endif

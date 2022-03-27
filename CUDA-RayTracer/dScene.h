@@ -8,6 +8,7 @@
 #include "BVH.h"
 #include "dLight.cuh"
 #include "dDirectionalLight.cuh"
+#include "dEnvironmentLight.cuh"
 
 class dScene
 {
@@ -18,6 +19,7 @@ public:
 	dTriangle* get_triangles();
 	dLight** get_lights();
 	int get_nmb_lights();
+	dEnvironmentLight* get_environment_light();
 	void update();
 
 private:
@@ -32,6 +34,8 @@ private:
 	LinearBVHNode* d_nodes;
 	dTriangle* d_triangles;
 	dLight** d_lights;
+	dEnvironmentLight* d_environment_light;
+	dEnvironmentLight** d_environment_light_old;
 
 	int nmb_lights = 0;
 
@@ -48,7 +52,6 @@ private:
 	void load_scene();
 	void load_models();
 	void load_materials();
-	int load_texture(Texture* tex);
 	void load_lights();
 	void load_camera();
 	void load_nodes();

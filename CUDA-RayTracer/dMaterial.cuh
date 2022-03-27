@@ -3,6 +3,8 @@
 
 class Isect;
 class dLight;
+class LinearBVHNode;
+class dTriangle;
 
 struct dMaterial
 {
@@ -52,7 +54,7 @@ __device__ float3 spec_f(const Isect& isect, const float3& wi, const float3& wo)
 __device__ float3 spec_sample_f(const Isect& isect, const float3& wo, float3& wi, float& pdf);
 __device__ float3 spec_L(dLight** lights, const Isect& isect, const float3& wi, const float3& wo, int light_id, const float3& sample_point, float r);
 
-__device__ float3 BRDF_L(dLight** lights, const Isect& isect, const float3& wi, const float3& wo, int light_id, const float3& sample_point, float3& sample_dir);
+__device__ float3 BRDF_L(dLight** lights, LinearBVHNode nodes[], dTriangle triangles[], const Isect& isect, const float3& wi, const float3& wo, int light_id, const float3& sample_point, float3& sample_dir);
 __device__ float3 BRDF_f(const Isect& isect, const float3& wi, const float3& wo);
 __device__ float BRDF_pdf(const Isect& isect, const float3 wi, const float3 wo);
 

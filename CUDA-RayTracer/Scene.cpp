@@ -200,6 +200,9 @@ Material* Scene::load_material(aiMaterial* material, const aiScene* scene)
         mat->baseColorFactor = glm::make_vec3(&baseColorFactor.r);
         mat->emissiveColorFactor = glm::make_vec3(&emissiveColorFactor.r);
 
+        mat->roughnessFactor = 1.f;
+        mat->metallicFactor = 0.f;
+
         mat->baseColorTexture = load_texture(aiTextureType_DIFFUSE, "baseColorTexture", material, scene);
         mat->normalTexture = load_texture(aiTextureType_NORMALS, "normalTexture", material, scene);
         mat->occlusionTexture = load_texture(aiTextureType_AMBIENT_OCCLUSION, "occlusionTexture", material, scene);

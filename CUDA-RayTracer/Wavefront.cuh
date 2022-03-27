@@ -31,7 +31,7 @@ struct Paths
     float3* light_samplePoint;
     float* light_pdf;
     float* light_cosine;
-    bool* light_inshadow;
+    bool* light_visible;
 };
 
 struct Queues

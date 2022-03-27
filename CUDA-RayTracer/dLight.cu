@@ -9,12 +9,7 @@ __device__ float3 dLight::L(const Isect& isect, float3 wi, float3 sample_point) 
 
 __device__ float3 dLight::L(const Isect& isect) { return make_float3(1, 1, 1); };
 
-__device__ float dLight::G(const Isect& isect) const
-{
-	return 1.0f;
-};
-
-__device__ float dLight::get_pdf(const Isect& isect, const dRay& ray) const
+__device__ float dLight::get_pdf(const Isect& isect, const float3& wi) const
 {
 	return 1.0f;
 };
@@ -44,15 +39,6 @@ __device__ void dLight::scale_radiance(const float _ls)
 	ls = _ls;
 };
 
-__device__ bool dLight::casts_shadows(void)
-{
-	return shadows;
-};
-
-__device__ void dLight::enable_shadows(bool b)
-{
-	shadows = b;
-}
 __device__ bool dLight::is_delta()
 {
 	return delta;

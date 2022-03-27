@@ -18,10 +18,10 @@ public:
     void clear_buffer();
 private:
     const int BLOCK_SIZE = 64;
-    const uint32_t  MAX_PATH_LENGTH = 10;
+    const uint32_t  MAX_PATH_LENGTH = 3;
 
-    int             width;
-    int             height;
+    int width;
+    int height;
 
     int path_count = 0;
     int grid_size = 0;

@@ -19,8 +19,10 @@ __device__ dRay dCamera::gen_ray(dFilm* film, float2 p)
     float3 pNear = make_float3(pNearNDC.x, pNearNDC.y, pNearNDC.z) / pNearNDC.w;
     float3 pFar = make_float3(pFarNDC.x, pFarNDC.y, pFarNDC.z) / pFarNDC.w;
 
+    float2 sp = UniformSampleSquare() * 0.005;
+
     dRay ray;
-    ray.o = pNear;
+    ray.o = pNear + make_float3(sp.x, sp.y, 0.f);
     ray.d = normalize(pFar - pNear);
 
     if (lens_radius > 0.f) {

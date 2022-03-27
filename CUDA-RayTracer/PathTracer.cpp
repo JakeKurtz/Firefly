@@ -128,7 +128,7 @@ void PathTracer::init_paths()
     checkCudaErrors(cudaMallocManaged(&paths->light_samplePoint, sizeof(float3) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
     checkCudaErrors(cudaMallocManaged(&paths->light_pdf, sizeof(float) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
     checkCudaErrors(cudaMallocManaged(&paths->light_cosine, sizeof(float) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
-    checkCudaErrors(cudaMallocManaged(&paths->light_inshadow, sizeof(bool) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
+    checkCudaErrors(cudaMallocManaged(&paths->light_visible, sizeof(bool) * path_count), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
 
     wavefront_init(paths, path_count);
 
@@ -186,7 +186,7 @@ void PathTracer::clear_paths()
 void PathTracer::update_film()
 {
     d_film->gamma = 1.f;
-    d_film->hres = height;
-    d_film->vres = width;
+    d_film->hres = width;
+    d_film->vres = height;
     //checkCudaErrors(cudaMemcpyToSymbol(, &h_film, sizeof(Film*)));
 }

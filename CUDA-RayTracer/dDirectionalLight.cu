@@ -28,22 +28,12 @@ __device__ float3 dDirectionalLight::L(const Isect& isect, float3 wi, float3 sam
 	return (emissive_L(material));
 }
 
-__device__ float dDirectionalLight::G(const Isect& isect) const
+__device__ float dDirectionalLight::get_pdf(const Isect& isect) const
 {
 	return 1.f;
 }
 
-__device__ bool dDirectionalLight::visible(const dRay& ray) const
-{
-	return false;
-}
-
-__device__ bool dDirectionalLight::visible(const dRay& ray, float& tmin, Isect& isect) const
-{
-	return false;
-}
-
-__device__ float dDirectionalLight::get_pdf(const Isect& isect) const
+__device__ float dDirectionalLight::get_pdf(const Isect& isect, const float3& wi) const
 {
 	return 1.f;
 }
@@ -53,10 +43,10 @@ __device__ float dDirectionalLight::get_pdf(const Isect& isect, const dRay& ray)
 	return 1.f;
 }
 
-__device__ bool dDirectionalLight::in_shadow(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& ray) const
+__device__ bool dDirectionalLight::visible(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& ray) const
 {
-	float ts = K_HUGE;// = dot((object_ptr->sample() - ray.o), ray.d);
-	return (intersect_shadows(nodes, triangles, ray, ts));
+	float ts = K_HUGE;
+	return (!intersect_shadows(nodes, triangles, ray, ts));
 }
 
 __device__ void dDirectionalLight::set_direction(const float x, const float y, const float z)

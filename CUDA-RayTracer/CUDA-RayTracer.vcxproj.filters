@@ -133,6 +133,10 @@
       <Filter>pathtracer\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="dTexture.cpp" />
+    <ClCompile Include="globals.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="massert.cpp" />
+    <ClCompile Include="image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CudaHelpers.h">
@@ -228,9 +232,6 @@
     <ClInclude Include="dScene.h">
       <Filter>pathtracer\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="dTriangle.cuh">
-      <Filter>pathtracer\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="dVertex.cuh">
       <Filter>pathtracer\Scene</Filter>
     </ClInclude>
@@ -265,6 +266,22 @@
       <Filter>pathtracer\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="dTexture.h" />
+    <ClInclude Include="GLCommon.h" />
+    <ClInclude Include="globals.h" />
+    <ClInclude Include="massert.h" />
+    <ClInclude Include="image.h" />
+    <ClInclude Include="dEnvironmentLight.cuh">
+      <Filter>pathtracer\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="dTexture.cuh">
+      <Filter>pathtracer</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers.cuh">
+      <Filter>pathtracer</Filter>
+    </ClInclude>
+    <ClInclude Include="dTriangle.cuh">
+      <Filter>pathtracer\Geometry</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu">
@@ -285,9 +302,6 @@
     <CudaCompile Include="dMaterial.cu">
       <Filter>pathtracer\Scene</Filter>
     </CudaCompile>
-    <CudaCompile Include="dTriangle.cu">
-      <Filter>pathtracer\Scene</Filter>
-    </CudaCompile>
     <CudaCompile Include="dRay.cu">
       <Filter>pathtracer\Rendering</Filter>
     </CudaCompile>
@@ -302,6 +316,18 @@
     </CudaCompile>
     <CudaCompile Include="dDirectionalLight.cu">
       <Filter>pathtracer\Lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dEnvironmentLight.cu">
+      <Filter>pathtracer\Lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dTexture.cu">
+      <Filter>pathtracer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Helpers.cu">
+      <Filter>pathtracer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="dTriangle.cu">
+      <Filter>pathtracer\Geometry</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

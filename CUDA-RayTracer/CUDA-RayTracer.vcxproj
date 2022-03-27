@@ -29,6 +29,7 @@
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="globals.cpp" />
+    <ClCompile Include="image.cpp" />
     <ClCompile Include="Interop.cpp" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="main.cpp" />
@@ -55,6 +56,7 @@
     <ClInclude Include="dAreaLight.cuh" />
     <ClInclude Include="dCamera.cuh" />
     <ClInclude Include="dDirectionalLight.cuh" />
+    <ClInclude Include="dEnvironmentLight.cuh" />
     <ClInclude Include="dFilm.cuh" />
     <ClInclude Include="DirectionalLight.h" />
     <ClInclude Include="dLight.cuh" />
@@ -64,6 +66,7 @@
     <ClInclude Include="dRandom.cuh" />
     <ClInclude Include="dRay.cuh" />
     <ClInclude Include="dScene.h" />
+    <ClInclude Include="dTexture.cuh" />
     <ClInclude Include="dTexture.h" />
     <ClInclude Include="dTriangle.cuh" />
     <ClInclude Include="dVertex.cuh" />
@@ -73,6 +76,8 @@
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="GLCommon.h" />
     <ClInclude Include="globals.h" />
+    <ClInclude Include="Helpers.cuh" />
+    <ClInclude Include="image.h" />
     <ClInclude Include="Interop.h" />
     <ClInclude Include="Isect.cuh" />
     <ClInclude Include="kernel.cuh" />
@@ -98,14 +103,17 @@
     <CudaCompile Include="dAreaLight.cu" />
     <CudaCompile Include="dCamera.cu" />
     <CudaCompile Include="dDirectionalLight.cu" />
+    <CudaCompile Include="dEnvironmentLight.cu" />
     <CudaCompile Include="dFilm.cu" />
     <CudaCompile Include="dLight.cu" />
     <CudaCompile Include="dMaterial.cu" />
     <CudaCompile Include="dMatrix.cu" />
     <CudaCompile Include="dRandom.cu" />
     <CudaCompile Include="dRay.cu" />
+    <CudaCompile Include="dTexture.cu" />
     <CudaCompile Include="dTriangle.cu" />
     <CudaCompile Include="GeometricObj.cu" />
+    <CudaCompile Include="Helpers.cu" />
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
@@ -146,7 +154,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN64;STB_IMAGE_IMPLEMENTATION;GLFW_INCLUDE_NONE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN64;GLFW_INCLUDE_NONE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)..\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -173,7 +181,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN64;STB_IMAGE_IMPLEMENTATION;GLFW_INCLUDE_NONE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN64;GLFW_INCLUDE_NONE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)..\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

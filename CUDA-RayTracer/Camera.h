@@ -34,8 +34,8 @@ public:
     glm::mat4 proj_mat;
 
     // euler Angles
-    float yaw = 844.499390;
-    float pitch = -7.30003309;
+    float yaw = 987.898193;
+    float pitch = -11.1999855;
 
     // camera options
     float movementSpeed = 2.5f;
