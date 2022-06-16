@@ -8,6 +8,23 @@ Interop::Interop(const bool _multi_gpu, const int _fbo_count)
         count = _fbo_count;
         index = 0;
 
+        glGenFramebuffers(1, &fbo_main);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_main);
+
+        glGenTextures(1, &col_tex);
+        glBindTexture(GL_TEXTURE_2D, col_tex);
+
+        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
         // allocate arrays
         fbo_list = (GLuint*)calloc(count, sizeof(GLuint));
         rbo_list = (GLuint*)calloc(count, sizeof(GLuint));
@@ -60,6 +77,10 @@ cudaError_t Interop::set_size(const int _width, const int _height)
     // save new size
     width = _width;
     height = _height;
+
+    glBindTexture(GL_TEXTURE_2D, col_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     // resize color buffer
     for (int index = 0; index < count; index++)
@@ -157,11 +178,13 @@ void Interop::clear()
 
     const GLfloat clear_color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
     glClearNamedFramebufferfv(fbo_list[index], GL_COLOR, 0, clear_color);
+    glClearNamedFramebufferfv(fbo_main, GL_COLOR, 0, clear_color);
 }
 
 void Interop::blit()
 {
-    glBlitNamedFramebuffer(fbo_list[index], 0,
+    glBlitNamedFramebuffer(
+        fbo_list[index], fbo_main,
         0, 0, width, height,
         0, height, width, 0,
         GL_COLOR_BUFFER_BIT,

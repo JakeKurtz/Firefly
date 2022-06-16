@@ -1442,6 +1442,7 @@ inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x)
 }
 
 static inline float3 float3_cast(const glm::vec3& v) { return make_float3(v.x, v.y, v.z); }
+static inline __device__ __host__ float3 float3_cast(const float4& v) { return make_float3(v.x, v.y, v.z); }
 static inline glm::vec3 vec3_cast(const float3& v) { return glm::vec3(v.x, v.y, v.z); }
 
 static inline float2 float2_cast(const glm::vec2& v) { return make_float2(v.x, v.y); }

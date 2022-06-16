@@ -165,11 +165,14 @@ __device__ float3 diff_f(const Isect& isect, const float3& wi, const float3& wo)
 {
 	float m = get_metallic(isect);
 	float3 a = get_albedo(isect);
+	float3 n = get_normal(isect);
+	float r = get_roughness(isect);
 
 	float3 f0 = lerp(isect.material->fresnel, a, m);
 
 	float3 wh = normalize(wo + wi);
-	float3 F = fresnel(f0, wh, wi);
+	//float3 F = fresnel(f0, wh, wi);
+	float3 F = fresnel_roughness(f0, n, wo, r);
 
 	float3 kD = make_float3(1.f) - F;
 	kD *= 1.0 - m;
@@ -248,7 +251,7 @@ __device__ float3 spec_sample(const Isect& isect, const float3& wo)
 
 	float3 sample = T * h.x + N * h.y + B * h.z;
 
-	float3 wi = -reflect(wo, normalize(sample));
+	float3 wi = reflect(-wo, normalize(sample));
 
 	return (wi);
 };
@@ -256,12 +259,12 @@ __device__ float spec_get_pdf(float3 n, float3 wi, float3 wo, float r)
 {
 	float3 wh = normalize(wo + wi);
 
-	double wh_dot_n = fmaxf(dot(wh, n), 0.f);
-	double wo_dot_wh = fmaxf(dot(wo, wh), 0.f);
+	double wh_dot_n = fmaxf(dot(wh, n), 0.00001f);
+	double wo_dot_wh = fmaxf(dot(wo, wh), 0.00001f);
 
 	double D = ggxtr_ndf(n, wh, r);
 
-	return (D * wh_dot_n) / fmaxf((4.f * wo_dot_wh), 0.001f);
+	return (D * wh_dot_n) / (4.f * wo_dot_wh);
 };
 __device__ float3 spec_f(const Isect& isect, const float3& wi, const float3& wo)
 {
@@ -275,14 +278,15 @@ __device__ float3 spec_f(const Isect& isect, const float3& wi, const float3& wo)
 	float3 n = get_normal(isect);
 	float3 wh = normalize(wo + wi);
 
-	double n_dot_wi = fmaxf(dot(n, wi), 0.f);
-	double n_dot_wo = fmaxf(dot(n, wo), 0.f);
+	double n_dot_wi = fmaxf(dot(n, wi), 0.00001f);
+	double n_dot_wo = fmaxf(dot(n, wo), 0.00001f);
 
 	double D = ggxtr_ndf(n, wh, r);
 	double G = geo_atten(wi, wo, n, r);
-	float3 F = fresnel(f0, wh, wi);
+	//float3 F = fresnel(f0, wh, wi);
+	float3 F = fresnel_roughness(f0, n, wo, r);
 
-	L = (D * G * F) / fmaxf((4.f * n_dot_wo * n_dot_wi), 0.001);
+	L = (D * G * F) / (4.f * n_dot_wo * n_dot_wi);
 
 	return (L);
 };
@@ -375,7 +379,7 @@ __device__ float3 BRDF_L(dLight** lights, LinearBVHNode nodes[], dTriangle trian
 
 	Li = lights[light_id]->L(isect, wi, sample_point);
 
-	float n_dot_wi = dot(n, wi);
+	float n_dot_wi = 1.f;// fmaxf(dot(n, wi), 0.f);
 
 	if (n_dot_wi > 0.f) {	
 		diff_pdf = diff_get_pdf();
@@ -393,10 +397,10 @@ __device__ float3 BRDF_L(dLight** lights, LinearBVHNode nodes[], dTriangle trian
 				spec_weight = power_heuristic(1, light_pdf, 1, spec_pdf);
 			}
 
-			f = spec_f(isect, wi, wo) * n_dot_wi;
+			f = spec_f(isect, wi, wo);// *n_dot_wi;
 			if (f != make_float3(0.f)) L += f * spec_weight * Li / light_pdf;
 
-			f = diff_f(isect, wi, wo) * n_dot_wi;
+			f = diff_f(isect, wi, wo);// *n_dot_wi;
 			if (f != make_float3(0.f)) L += f * diff_weight * Li / light_pdf;
 		}
 	}
@@ -411,14 +415,15 @@ __device__ float3 BRDF_L(dLight** lights, LinearBVHNode nodes[], dTriangle trian
 
 	if (!lights[light_id]->is_delta()) {
 		visibility_ray = dRay(isect.position + wi_spec * 0.001, wi_spec);
-		n_dot_wi = dot(get_normal(isect), wi_spec);
+		//n_dot_wi = fmaxf(dot(get_normal(isect), wi_spec), 0.f);
+		//n_dot_wi = dot(get_normal(isect), wi_spec);
 
 		if (n_dot_wi > 0.f && lights[light_id]->visible(nodes, triangles, visibility_ray)) {
 			spec_pdf = spec_get_pdf(get_normal(isect), wi_spec, wo, r);
 			light_pdf = lights[light_id]->get_pdf(isect, wi_spec);
 			spec_weight = power_heuristic(1, spec_pdf, 1, light_pdf);
 
-			f = spec_f(isect, wi_spec, wo) * n_dot_wi;
+			f = spec_f(isect, wi_spec, wo);// *n_dot_wi;
 
 			float3 sp;
 			Li = lights[light_id]->L(isect, wi_spec, sp);
@@ -428,15 +433,16 @@ __device__ float3 BRDF_L(dLight** lights, LinearBVHNode nodes[], dTriangle trian
 			}
 		}
 
-		visibility_ray = dRay(isect.position + wi_spec * 0.001, wi_diff);
-		n_dot_wi = dot(get_normal(isect), wi_diff);
+		visibility_ray = dRay(isect.position + wi_diff * 0.001, wi_diff);
+		//n_dot_wi = fmaxf(dot(get_normal(isect), wi_diff), 0.f);
+		//n_dot_wi = dot(get_normal(isect), wi_diff);
 
 		if (n_dot_wi > 0.f && lights[light_id]->visible(nodes, triangles, visibility_ray)) {
 			diff_pdf = diff_get_pdf();
 			light_pdf = lights[light_id]->get_pdf(isect, wi_diff);
 			diff_weight = power_heuristic(1, diff_pdf, 1, light_pdf);
 
-			f = diff_f(isect, wi_diff, wo) * n_dot_wi;
+			f = diff_f(isect, wi_diff, wo);// *n_dot_wi;
 
 			float3 sp;
 			Li = lights[light_id]->L(isect, wi_diff, sp);

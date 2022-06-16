@@ -10,7 +10,7 @@ glm::mat4 Camera::getProjMatrix()
     return proj_mat;
 }
 
-void Camera::sendUniforms(Shader& shader) {
+void Camera::send_uniforms(Shader& shader) {
     shader.setMat4("projection", proj_mat);
     shader.setMat4("view", lookat_mat);
     shader.setVec3("camPos", position);

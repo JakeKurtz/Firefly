@@ -43,6 +43,12 @@
     <Filter Include="pathtracer\Geometry">
       <UniqueIdentifier>{6feac0ab-a620-4bc1-a168-c590b438048f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="rasterizer\Curves">
+      <UniqueIdentifier>{5e7f7b38-e6a2-4c14-8b6b-694af2e44c2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUI">
+      <UniqueIdentifier>{f0b1f0e6-4c2b-4578-a4fa-4ef0b4dcd113}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\imgui\imgui_demo.cpp">
@@ -102,7 +108,7 @@
     <ClCompile Include="Shader.cpp">
       <Filter>rasterizer\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Geometry.cpp">
+    <ClCompile Include="Transform.cpp">
       <Filter>rasterizer\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Material.cpp">
@@ -137,6 +143,33 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="massert.cpp" />
     <ClCompile Include="image.cpp" />
+    <ClCompile Include="Lsystem.cpp">
+      <Filter>rasterizer\Curves</Filter>
+    </ClCompile>
+    <ClCompile Include="Curve.cpp">
+      <Filter>rasterizer\Curves</Filter>
+    </ClCompile>
+    <ClCompile Include="Bezier.cpp">
+      <Filter>rasterizer\Curves</Filter>
+    </ClCompile>
+    <ClCompile Include="ClosedCurve.cpp">
+      <Filter>rasterizer\Curves</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneViewWindow.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObject.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderingContext.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageViewWindow.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectEditWindow.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CudaHelpers.h">
@@ -184,7 +217,7 @@
     <ClInclude Include="Scene.h">
       <Filter>rasterizer\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Geometry.h">
+    <ClInclude Include="Transform.h">
       <Filter>rasterizer\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Material.h">
@@ -282,6 +315,37 @@
     <ClInclude Include="dTriangle.cuh">
       <Filter>pathtracer\Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="Lsystem.h">
+      <Filter>rasterizer\Curves</Filter>
+    </ClInclude>
+    <ClInclude Include="Bezier.h">
+      <Filter>rasterizer\Curves</Filter>
+    </ClInclude>
+    <ClInclude Include="Curve.h">
+      <Filter>rasterizer\Curves</Filter>
+    </ClInclude>
+    <ClInclude Include="ClosedCurve.h">
+      <Filter>rasterizer\Curves</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneViewWindow.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderObject.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderingContext.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageViewWindow.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="ObjectEditWindow.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="dTransform.cuh">
+      <Filter>pathtracer\Geometry</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu">
@@ -329,10 +393,16 @@
     <CudaCompile Include="dTriangle.cu">
       <Filter>pathtracer\Geometry</Filter>
     </CudaCompile>
+    <CudaCompile Include="dTransform.cu">
+      <Filter>pathtracer\Geometry</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini">
       <Filter>imgui</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CUDA-RayTracer.rc" />
   </ItemGroup>
 </Project>

@@ -8,7 +8,7 @@ cudaError_t launchKernel(int* c, const int* a, const int* b, unsigned int size);
 void debug_raytracer(dFilm* film, dScene* scene, cudaArray_const_t array, cudaEvent_t event, cudaStream_t stream);
 
 // NOTE: this code is smelly! data clumps/long parameter list -> some kind of struct to contain pathtracing crap?
-void wavefront_pathtrace(Paths* paths, Queues* queues, dFilm* film, float4* accumulatebuffer, int* n_samples, int path_count, int max_path_length, dScene* scene, cudaArray_const_t array, cudaEvent_t event, cudaStream_t stream);
+void wavefront_pathtrace(Paths* paths, Queues* queues, dFilm* film, float4* accumulatebuffer, int* n_samples, int path_count, int max_path_length, dScene* scene, cudaArray_const_t array, cudaEvent_t event, cudaStream_t stream, int tile_size, int tile_x, int tile_y, int max_samples, bool* completed_pixels, uint32_t* nmb_completed_pixels);
 
 void wavefront_init(Paths* paths, int path_count);
 
@@ -17,10 +17,16 @@ PathTracer::PathTracer(int w, int h)
     width = w;
     height = h;
 
-    path_count = width * height * 1;
+    //path_count = w*h*5;
+    path_count = tile_size * tile_size * 10;
 
     cudaMalloc(&accumulatebuffer, width * height * sizeof(float4));
     cudaMalloc(&n_samples, width * height * sizeof(int));
+    cudaMalloc(&completed_pixels, width * height * sizeof(bool));
+
+    checkCudaErrors(cudaMallocManaged((void**)&nmb_completed_pixels, sizeof(uint32_t)), "CUDA ERROR: failed to allocate CUDA device memory for queues.");
+
+    *nmb_completed_pixels = 0;
 
     init_interop();
     init_queues();
@@ -33,14 +39,20 @@ PathTracer::PathTracer(int w, int h)
         paths_initialized &&
         film_initialized
     );
+
+    nmb_tile_cols = (width / tile_size);
+    nmb_tile_rows = (height / tile_size);
+
+    nmb_tiles = nmb_tile_cols * nmb_tile_rows - 1;
 }
 
 void PathTracer::draw_debug(dScene* s)
 {
     m_assert(initialized, "draw: pathtracer has not been properly initialized.");
 
-    s->update();
-
+    if (s->update()) {
+        clear_buffer();
+    }
     cudaArray_t cuda_array;
 
     interop->get_size(&width, &height);
@@ -52,30 +64,66 @@ void PathTracer::draw_debug(dScene* s)
 
     interop->blit();
     interop->swap();
-
-    //frame++;
 }
 
-void PathTracer::draw(dScene* s)
+void PathTracer::render_image(dScene* s)
 {
     m_assert(initialized, "draw: pathtracer has not been properly initialized.");
 
-    s->update();
+    if (s->update()) {
+        reset_image();
+    }
+
+    if (*nmb_completed_pixels >= tile_size * tile_size) {
+
+        if (tile_id == nmb_tiles) {
+            image_complete = true;
+        }
+
+        if (tile_id < nmb_tiles) {
+            tile_id++;
+        }
+        *nmb_completed_pixels = 0;
+    }
+
+    tile_x = tile_id / nmb_tile_cols;
+    tile_y = tile_id % nmb_tile_rows;
 
     cudaArray_t cuda_array;
 
     interop->get_size(&width, &height);
     checkCudaErrors(interop->map(stream));
 
-    wavefront_pathtrace(paths, queues, d_film, accumulatebuffer, n_samples, path_count, MAX_PATH_LENGTH, s, interop->array_get(), event, stream);
+    if (!image_complete) {
+        wavefront_pathtrace(paths, queues, d_film, accumulatebuffer, n_samples, path_count, MAX_PATH_LENGTH, s, interop->array_get(), event, stream, tile_size, tile_x, tile_y, max_samples, completed_pixels, nmb_completed_pixels);
+        clear_queues();
+    }
+
+    checkCudaErrors(interop->unmap(stream));
+
+    interop->blit();
+}
+
+void PathTracer::draw(dScene* s)
+{
+    m_assert(initialized, "draw: pathtracer has not been properly initialized.");
+
+    if (s->update()) {
+        clear_buffer();
+    }
+
+    cudaArray_t cuda_array;
+
+    interop->get_size(&width, &height);
+    checkCudaErrors(interop->map(stream));
+
+    wavefront_pathtrace(paths, queues, d_film, accumulatebuffer, n_samples, path_count, MAX_PATH_LENGTH, s, interop->array_get(), event, stream, 1024, 0, 0, 16, completed_pixels, nmb_completed_pixels);
     clear_queues();
 
     checkCudaErrors(interop->unmap(stream));
 
     interop->blit();
-    interop->swap();
-
-    //frame++;
+    //interop->swap();
 }
 
 void PathTracer::init_interop()
@@ -132,10 +180,6 @@ void PathTracer::init_paths()
 
     wavefront_init(paths, path_count);
 
-    //wf_init <<< GRIDSIZE, BLOCKSIZE >>> (paths, path_count);
-    //checkCudaErrors(cudaGetLastError(), "CUDA ERROR: failed to initialize paths.");
-    //checkCudaErrors(cudaDeviceSynchronize());
-
     paths_initialized = true;
 }
 
@@ -147,26 +191,39 @@ void PathTracer::init_film()
     film_initialized = true;
 }
 
+void PathTracer::reset_image()
+{
+    clear_buffer();
+    tile_id = 0;
+    image_complete = false;
+}
+
 void PathTracer::clear_buffer()
 {
-    //if (buffer_reset) {
-    //    cameraWasMoving = true;
-    //}
+    cudaMemset(accumulatebuffer, 0, width * height * sizeof(float4));
+    cudaMemset(n_samples, 0, width * height * sizeof(int));
+    cudaMemset(completed_pixels, false, width * height * sizeof(bool));
 
-    //if (cameraWasMoving) {
-        cudaMemset(accumulatebuffer, 0, width * height * sizeof(float4));
-        cudaMemset(n_samples, 0, width * height * sizeof(int));
-        //frame = 0;
-        interop->clear();
-    //    clear_counter--;
-    //}
+    *nmb_completed_pixels = 0;
 
-    //if (clear_counter == 0) {
-    //    cameraWasMoving = false;
-    //    clear_counter = 5;
-    //}
+    interop->clear();
 
-    //buffer_reset = false;
+    wavefront_init(paths, path_count);
+}
+
+void PathTracer::set_tile_size(int size)
+{
+    tile_size = size;
+
+    path_count = tile_size * tile_size * 10;
+
+    init_queues();
+    init_paths();
+
+    nmb_tile_cols = (width / tile_size);
+    nmb_tile_rows = (height / tile_size);
+
+    nmb_tiles = nmb_tile_cols * nmb_tile_rows - 1;
 }
 
 void PathTracer::clear_queues()

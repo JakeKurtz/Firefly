@@ -50,14 +50,15 @@ public:
     glm::mat4 getViewMatrix();
     glm::mat4 getProjMatrix();
 
-    void sendUniforms(Shader& shader);
+    void send_uniforms(Shader& shader);
     void sendUniforms2(Shader& shader);
 
     void processKeyboard(Camera_Movement direction, float deltaTime);
     void processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
     void processMouseScroll(float yoffset);
 
-protected:
     void updateCameraVectors();
+
+protected:
 };
 

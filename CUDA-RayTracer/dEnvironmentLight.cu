@@ -40,21 +40,26 @@ dEnvironmentLight::dEnvironmentLight(cudaTextureObject_t hrd_texture, cudaSurfac
 
 __device__ void dEnvironmentLight::get_direction(const Isect& isect, float3& wi, float3& sample_point)
 {
-	float ex = random();
-	float ey = random();
+	if (hrd_texture != -1) {
+		float ex = random();
+		float ey = random();
 
-	int y = upper_bound(marginal_y, tex_height, ey) - 1.f;
-	int x = upper_bound(conds_y[y], tex_width, ex) - 1.f;
+		int y = upper_bound(marginal_y, tex_height, ey) - 1.f;
+		int x = upper_bound(conds_y[y], tex_width, ex) - 1.f;
 
-	float u = (float)x / (float)tex_width;
-	float v = (float)y / (float)tex_height;
+		float u = (float)x / (float)tex_width;
+		float v = (float)y / (float)tex_height;
 
-	float3 dir = sample_spherical_direction(make_float2(u, v));
+		float3 dir = sample_spherical_direction(make_float2(u, v));
 
-	sample_point = make_float3(0.f) + dir * radius;
-	wi = normalize(sample_point - isect.position);
-
-	//wi = sample_spherical_direction(make_float2(u, v));
+		sample_point = make_float3(0.f) + dir * radius;
+		wi = normalize(sample_point - isect.position);
+	}
+	else {
+		float3 dir = sample_spherical_direction(make_float2(random(), random()));
+		sample_point = make_float3(0.f) + dir * radius;
+		wi = normalize(sample_point - isect.position);
+	}
 }
 
 __device__ bool dEnvironmentLight::visible(const LinearBVHNode* nodes, const dTriangle* triangles, const dRay& ray) const
@@ -82,24 +87,17 @@ __device__ float dEnvironmentLight::get_pdf(const Isect& isect) const
 
 __device__ float dEnvironmentLight::get_pdf(const Isect& isect, const float3& wi) const
 {
-	//float3 sample_point = make_float3(0.f) + wi * radius;
-	//float3 dir = normalize(sample_point - isect.position);
+	if (hrd_texture != -1) {
+		float2 uv = sample_spherical_map(wi);
 
-	float2 uv = sample_spherical_map(wi);
-	/*
-	float4 sample = tex2DLod<float4>(hrd_texture, uv.x, uv.y, 0);
+		float pdf;
+		surf2Dread(&pdf, pdf_texture, (int)(uv.x * (tex_width - 1)) * sizeof(float), (int)(uv.y * (tex_height - 1)));
 
-	float lum = luminance(make_float3(sample.x, sample.y, sample.z));
-
-	float pdf = (lum * sin(M_PI * uv.y)) / pdf_denom;
-	float foo = (tex_width * tex_height) / (2.f * M_PI * M_PI * sin(acos(clamp(wi.z, -1.f, 1.f))));
-
-	return pdf * foo;
-	*/
-	float pdf;
-	surf2Dread(&pdf, pdf_texture, (int)(uv.x * (tex_width - 1)) * sizeof(float), (int)(uv.y * (tex_height - 1)));
-
-	return pdf / sin(acos(clamp(wi.z, -1.f, 1.f)));
+		return pdf / sin(acos(clamp(wi.z, -1.f, 1.f)));
+	}
+	else {
+		return M_1_4PI;
+	}
 }
 
 __device__ cudaTextureObject_t dEnvironmentLight::get_hrd_tex()

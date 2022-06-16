@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <glm/ext/matrix_float4x4.hpp>
+#include "dRay.cuh"
 
 struct Matrix4x4 {
 
@@ -25,11 +26,11 @@ struct Matrix4x4 {
     __host__ __device__ Matrix4x4 operator-(const Matrix4x4 A) const;
     __host__ __device__ Matrix4x4 operator-() const;
 
-    __host__ __device__ Matrix4x4 transpose(const Matrix4x4& m);
+    __host__ __device__ Matrix4x4 transpose();
 
     __host__ __device__ float det() const;
     __host__ __device__ Matrix4x4 inv() const;
-    __host__ void print();
+    __host__ __device__ void print();
 
     static __host__ __device__ Matrix4x4 zero(void);
     static __host__ __device__ Matrix4x4 ones(void);
@@ -75,6 +76,31 @@ inline __host__ __device__ float3 operator*(Matrix4x4 m, float3 v)
     out.z = m.m[0][2] * v.x + m.m[1][2] * v.y + m.m[2][2] * v.z + m.m[3][2];
     out.w = m.m[0][3] * v.x + m.m[1][3] * v.y + m.m[2][3] * v.z + m.m[3][3];
     return make_float3(out.x / out.w, out.y / out.w, out.z / out.w);
+}
+
+inline __device__ dRay operator*(const Matrix4x4 m, const dRay r)
+{
+    dRay out;
+
+    float4 o = m * make_float4(r.o.x, r.o.y, r.o.z, 1.f);
+    float4 d = m * make_float4(r.d.x, r.d.y, r.d.z, 0.f);
+
+    out.o = make_float3(o.x, o.y, o.z);
+    out.d = make_float3(d.x, d.y, d.z);
+
+    return out;
+}
+inline __device__ dRay operator*(const dRay r, const Matrix4x4 m)
+{
+    dRay out;
+
+    float4 o = make_float4(r.o.x, r.o.y, r.o.z, 1.f) * m;
+    float4 d = make_float4(r.d.x, r.d.y, r.d.z, 0.f) * m;
+
+    out.o = make_float3(o.x, o.y, o.z);
+    out.d = make_float3(d.x, d.y, d.z);
+
+    return out;
 }
 
 static inline Matrix4x4 Matrix4x4_cast(const glm::mat4& m)

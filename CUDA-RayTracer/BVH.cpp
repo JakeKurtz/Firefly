@@ -56,11 +56,13 @@ BVHAccel::BVHAccel(std::vector<BVHPrimitiveInfo> primitiveInfo, SplitMethod spli
 
 	MemoryArena arena(1024 * 1024);
 
-	root = recursive_build(arena, primitiveInfo, 0, primitiveInfo.size(), &totalNodes, orderedPrims);
-	nodes = AllocAligned<LinearBVHNode>(totalNodes);
+	if (primitiveInfo.size() > 0) {
+		root = recursive_build(arena, primitiveInfo, 0, primitiveInfo.size(), &totalNodes, orderedPrims);
+		nodes = AllocAligned<LinearBVHNode>(totalNodes);
 
-	int offset = 0;
-	flatten_tree(root, &offset);
+		int offset = 0;
+		flatten_tree(root, &offset);
+	}
 }
 
 int BVHAccel::get_nmb_nodes()

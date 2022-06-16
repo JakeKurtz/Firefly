@@ -1,9 +1,9 @@
 #include "Material.h"
+#include "globals.h"
 
 Material::Material()
 {
-	static int id_counter = 0;
-	id = ++id_counter;
+	id = gen_id();
 }
 
 void Material::send_uniforms(Shader& shader)

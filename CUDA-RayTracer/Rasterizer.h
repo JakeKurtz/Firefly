@@ -32,6 +32,7 @@ public:
     Shader shaderShadowDepth;
     Shader gaussFilter;
     Shader bilateralFilter;
+    Shader shaderCurve;
 
     unsigned int uboExampleBlock;
 
@@ -46,7 +47,7 @@ public:
     int kernel_size = 9;
 
     float scale = 10.f;
-    glm::mat4 cascade_proj_mat = glm::ortho(-10.f, 10.f, -10.f, 10.f, 0.1f, 1000.f);
+    glm::mat4 cascade_proj_mat = glm::ortho(-100.f, 100.f, -100.f, 100.f, 0.1f, 1000.f);
     //glm::mat4 cascade_proj_mat = glm::perspective(glm::radians(45.f), 1.f, 0.01f, 10000.f);
     glm::vec3 up = glm::vec3(0.f, 1.f, 0.f);
 
@@ -65,11 +66,15 @@ public:
 
     Rasterizer(int _SCR_WIDTH = 1000, int _SCR_HEIGHT = 1000);
 
-    void draw(Scene* scene);
-    void drawGeometry(Scene* scene);
-    void drawLighting(Scene* scene);
-    void drawShadows(Scene* scene);
-    void drawShadowMaps(Scene* scene);
+    void draw_wireframe(Scene* scene, Camera* camera);
+    void draw_clay(Scene* scene, Camera* camera);
+
+    void draw(Scene* scene, Camera* camera);
+    void drawCurves(Scene* scene, Camera* camera);
+    void drawGeometry(Scene* scene, Camera* camera);
+    void drawLighting(Scene* scene, Camera* camera);
+    void drawShadows(Scene* scene, Camera* camera);
+    void drawShadowMaps(Scene* scene, Camera* camera);
 
     void setScreenSize(int _SCR_WIDTH, int _SCR_HEIGHT);
     void setShadowCubeSize(int _size);

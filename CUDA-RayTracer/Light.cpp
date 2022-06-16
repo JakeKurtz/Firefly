@@ -4,7 +4,7 @@ Light::Light()
 {
 }
 
-std::string Light::getName() { return std::string(); }
+std::string Light::get_name() { return std::string(); }
 
 int Light::getId() { return id; }
 

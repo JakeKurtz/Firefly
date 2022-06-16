@@ -1,11 +1,15 @@
 #include "Mesh.h"
+#include "globals.h"
 
 Mesh::Mesh()
 {
+    id = gen_id();
 }
 
 Mesh::Mesh(std::string name, std::vector<Vertex> vertices, std::vector<unsigned int> indices, Material* material)
 {
+    id = gen_id();
+
     this->name = name;
     this->vertices = vertices;
     this->indices = indices;
@@ -47,6 +51,11 @@ Material* Mesh::get_material()
 std::string Mesh::get_name()
 {
     return name;
+}
+
+int Mesh::get_id()
+{
+    return id;
 }
 
 int Mesh::get_nmb_of_triangles()

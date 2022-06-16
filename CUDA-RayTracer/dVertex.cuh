@@ -1,5 +1,7 @@
 #pragma once
 #include <cuda_runtime.h>
+#include "dMatrix.cuh"
+#include "dMath.cuh"
 
 struct dVertex {
 	float3 position;

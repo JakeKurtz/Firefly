@@ -1,13 +1,16 @@
 #include "PointLight.h"
+#include "globals.h"
 
 PointLight::PointLight()
 {
+	id = gen_id();
 	position = glm::vec3(0.f);
 	color = glm::vec3(1.f);
 }
 
 PointLight::PointLight(glm::vec3 _position, glm::vec3 _color)
 {
+	id = gen_id();
 	position = _position;
 	color = _color;
 }

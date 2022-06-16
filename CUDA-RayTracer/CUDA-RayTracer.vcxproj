@@ -18,41 +18,53 @@
     <ClCompile Include="..\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Attachment.cpp" />
+    <ClCompile Include="Bezier.cpp" />
     <ClCompile Include="BVH.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ClosedCurve.cpp" />
     <ClCompile Include="CubeMap.cpp" />
     <ClCompile Include="CudaHelpers.cpp" />
+    <ClCompile Include="Curve.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="dScene.cpp" />
     <ClCompile Include="dTexture.cpp" />
     <ClCompile Include="EnvironmentLight.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
-    <ClCompile Include="Geometry.cpp" />
+    <ClCompile Include="Transform.cpp" />
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="image.cpp" />
+    <ClCompile Include="ImageViewWindow.cpp" />
     <ClCompile Include="Interop.cpp" />
     <ClCompile Include="Light.cpp" />
+    <ClCompile Include="Lsystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="massert.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
+    <ClCompile Include="ObjectEditWindow.cpp" />
     <ClCompile Include="PathTracer.cpp" />
     <ClCompile Include="PerspectiveCamera.cpp" />
     <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
+    <ClCompile Include="RenderingContext.cpp" />
+    <ClCompile Include="RenderObject.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="SceneViewWindow.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureArray.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Attachment.h" />
+    <ClInclude Include="Bezier.h" />
     <ClInclude Include="Bounds3f.h" />
     <ClInclude Include="BVH.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ClosedCurve.h" />
     <ClInclude Include="CubeMap.h" />
     <ClInclude Include="CudaHelpers.h" />
+    <ClInclude Include="Curve.h" />
     <ClInclude Include="dAreaLight.cuh" />
     <ClInclude Include="dCamera.cuh" />
     <ClInclude Include="dDirectionalLight.cuh" />
@@ -68,32 +80,40 @@
     <ClInclude Include="dScene.h" />
     <ClInclude Include="dTexture.cuh" />
     <ClInclude Include="dTexture.h" />
+    <ClInclude Include="dTransform.cuh" />
     <ClInclude Include="dTriangle.cuh" />
     <ClInclude Include="dVertex.cuh" />
     <ClInclude Include="EnvironmentLight.h" />
     <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="GeometricObj.cuh" />
-    <ClInclude Include="Geometry.h" />
+    <ClInclude Include="Transform.h" />
     <ClInclude Include="GLCommon.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="Helpers.cuh" />
     <ClInclude Include="image.h" />
+    <ClInclude Include="ImageViewWindow.h" />
     <ClInclude Include="Interop.h" />
     <ClInclude Include="Isect.cuh" />
     <ClInclude Include="kernel.cuh" />
     <ClInclude Include="Light.h" />
+    <ClInclude Include="Lsystem.h" />
     <ClInclude Include="massert.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="MemoryArena.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="ObjectEditWindow.h" />
     <ClInclude Include="PathTracer.h" />
     <ClInclude Include="PerspectiveCamera.h" />
     <ClInclude Include="PointLight.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="Rectangle.cuh" />
+    <ClInclude Include="RenderingContext.h" />
+    <ClInclude Include="RenderObject.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="SceneViewWindow.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureArray.h" />
@@ -111,6 +131,7 @@
     <CudaCompile Include="dRandom.cu" />
     <CudaCompile Include="dRay.cu" />
     <CudaCompile Include="dTexture.cu" />
+    <CudaCompile Include="dTransform.cu" />
     <CudaCompile Include="dTriangle.cu" />
     <CudaCompile Include="GeometricObj.cu" />
     <CudaCompile Include="Helpers.cu" />
@@ -119,9 +140,13 @@
   <ItemGroup>
     <None Include="imgui.ini" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CUDA-RayTracer.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{63904427-B4E6-4E0C-9AC5-11D68762DA18}</ProjectGuid>
     <RootNamespace>CUDA_RayTracer</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

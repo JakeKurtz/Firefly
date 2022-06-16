@@ -11,5 +11,7 @@ public:
 	PerspectiveCamera();
 	PerspectiveCamera(float aspectRatio, float yfov, float znear, float zfar);
 	PerspectiveCamera(glm::vec3 position, float aspectRatio, float yfov, float znear, float zfar);
+
+	void set_aspect_ratio(float aspect_ratio);
 };
 

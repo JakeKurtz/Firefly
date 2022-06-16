@@ -1,6 +1,6 @@
 #pragma once
 #pragma warning(disable:4005)
-#include <GL/glew.h>
+//#include <GL/glew.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/ext.hpp>

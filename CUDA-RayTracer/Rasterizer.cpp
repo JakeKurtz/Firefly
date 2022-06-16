@@ -6,7 +6,8 @@ Rasterizer::Rasterizer(int _SCR_WIDTH, int _SCR_HEIGHT) :
     shaderShadowPass("../shaders/main/shadowPass_vs.glsl", "../shaders/main/shadowPass_fs.glsl"),
     shaderShadowDepth("../shaders/main/shadowDepth_vs.glsl", "../shaders/main/shadowDepth_fs.glsl"),
     gaussFilter("../shaders/main/gaussFilter_vs.glsl", "../shaders/main/gaussFilter_fs.glsl"),
-    bilateralFilter("../shaders/main/bilateralFilter_vs.glsl", "../shaders/main/bilateralFilter_fs.glsl")
+    bilateralFilter("../shaders/main/bilateralFilter_vs.glsl", "../shaders/main/bilateralFilter_fs.glsl"),
+    shaderCurve("../shaders/curves/curve_vs.glsl", "../shaders/curves/curve_fs.glsl")
 {
     SCR_WIDTH = _SCR_WIDTH;
     SCR_HEIGHT = _SCR_HEIGHT;
@@ -39,11 +40,117 @@ float lerp(float v0, float v1, float t)
     return (1 - t) * v0 + t * v1;
 }
 
-void Rasterizer::draw(Scene* scene)
+void Rasterizer::draw(Scene* scene, Camera* camera)
 {
-    //for (auto obj : scene->models)
-        //obj->updateTRS();
+    // ------ GEOMETRY PASS ------ //
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    gBuffer->bind();
+
+    glDepthMask(GL_TRUE);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+
+    drawGeometry(scene, camera);
+
+    gBuffer->unbind();
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    
+    // ------ SHADOW MAP PASS ------ //
+
+    glCullFace(GL_FRONT);
+    drawShadowMaps(scene, camera);
+    glCullFace(GL_BACK);
+
+    fbo_test2->bind();
+    drawShadows(scene, camera);
+    fbo_test2->unbind();
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+    // ------ LIGHTING PASS ------ //
+
+    glDepthMask(GL_FALSE);
+    glDisable(GL_DEPTH_TEST);
+
+    //glEnable(GL_BLEND);
+    //glBlendEquation(GL_FUNC_ADD);
+    //glBlendFunc(GL_ONE, GL_ONE);
+
+    fbo->bind();
+
+    drawLighting(scene, camera);
+
+    glEnable(GL_DEPTH_TEST);
+    
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer->id);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->id);
+    glBlitFramebuffer(0, 0, gBuffer->width, gBuffer->height, 0, 0, gBuffer->width, gBuffer->height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    fbo->unbind();
+
+    // ------ BACKGROUND ------ //
+    fbo->bind();
+
+    scene->environment_light->draw_background(camera);
+
+    fbo->unbind();
+
+    // ------ DRAW CURVES ------ //
+
+    fbo->bind();
+
+    drawCurves(scene, camera);
+
+    fbo->unbind();
+}
+
+void Rasterizer::draw_wireframe(Scene* scene, Camera* camera)
+{
+    // ------ GEOMETRY PASS ------ //
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    fbo->bind();
+
+    glDepthMask(GL_TRUE);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    shaderCurve.use();
+    for (auto m : scene->models) {
+        if (m != nullptr) {
+            shaderCurve.setMat4("model", m->get_transform()->get_matrix());
+            camera->send_uniforms(shaderCurve);
+            m->draw(shaderCurve);
+        }
+    }
+
+    for (auto c : scene->curves) {
+        if (c != nullptr) {
+            shaderCurve.setMat4("model", c->get_transform()->get_matrix());
+            camera->send_uniforms(shaderCurve);
+            c->draw(shaderCurve);
+        }
+    }
+    // ------ BACKGROUND ------ //
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    scene->environment_light->draw_background(camera);
+
+    fbo->unbind();
+}
+
+void Rasterizer::draw_clay(Scene* scene, Camera* camera)
+{
     // ------ GEOMETRY PASS ------ //
 
     glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -56,7 +163,7 @@ void Rasterizer::draw(Scene* scene)
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
 
-    drawGeometry(scene);
+    drawGeometry(scene, camera);
 
     gBuffer->unbind();
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -64,11 +171,11 @@ void Rasterizer::draw(Scene* scene)
     // ------ SHADOW MAP PASS ------ //
 
     glCullFace(GL_FRONT);
-    drawShadowMaps(scene);
+    drawShadowMaps(scene, camera);
     glCullFace(GL_BACK);
 
     fbo_test2->bind();
-    drawShadows(scene);
+    drawShadows(scene, camera);
     fbo_test2->unbind();
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -77,36 +184,62 @@ void Rasterizer::draw(Scene* scene)
     glDepthMask(GL_FALSE);
     glDisable(GL_DEPTH_TEST);
 
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_ONE, GL_ONE);
+    //glEnable(GL_BLEND);
+    //glBlendEquation(GL_FUNC_ADD);
+    //glBlendFunc(GL_ONE, GL_ONE);
 
-    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-    drawLighting(scene);
+    fbo->bind();
+
+    drawLighting(scene, camera);
 
     glEnable(GL_DEPTH_TEST);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer->id);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->id);
     glBlitFramebuffer(0, 0, gBuffer->width, gBuffer->height, 0, 0, gBuffer->width, gBuffer->height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    fbo->unbind();
 
     // ------ BACKGROUND ------ //
+    fbo->bind();
 
-    //scene->environment_light->draw_background(scene->camera);
+    scene->environment_light->draw_background(camera);
+
+    fbo->unbind();
+
+    // ------ DRAW CURVES ------ //
+
+    fbo->bind();
+
+    drawCurves(scene, camera);
+
+    fbo->unbind();
 }
 
-void Rasterizer::drawGeometry(Scene* scene)
+void Rasterizer::drawCurves(Scene* scene, Camera* camera)
 {
-    shaderGeometryPass.use();
-    for (auto m : scene->models) {
-        shaderGeometryPass.setMat4("model", m->model_mat);
-        scene->camera->sendUniforms(shaderGeometryPass);
-        m->draw(shaderGeometryPass);
+    shaderCurve.use();
+    for (auto c : scene->curves) {
+        if (c != nullptr) {
+            shaderCurve.setMat4("model", c->get_transform()->get_matrix());
+            camera->send_uniforms(shaderCurve);
+            c->draw(shaderCurve);
+        }
     }
 }
 
-void Rasterizer::drawLighting(Scene* scene)
+void Rasterizer::drawGeometry(Scene* scene, Camera* camera)
+{
+    shaderGeometryPass.use();
+    for (auto m : scene->models) {
+        if (m != nullptr) {
+            shaderGeometryPass.setMat4("model", m->get_transform()->get_matrix());
+            camera->send_uniforms(shaderGeometryPass);
+            m->draw(shaderGeometryPass);
+        }
+    }
+}
+
+void Rasterizer::drawLighting(Scene* scene, Camera* camera)
 {
     shaderLightingPass.use();
 
@@ -157,8 +290,9 @@ void Rasterizer::drawLighting(Scene* scene)
     glBindTexture(GL_TEXTURE_2D_ARRAY, cascadeShadowMapTexArray->getID());
 
     scene->send_uniforms(shaderLightingPass);
+    camera->send_uniforms(shaderLightingPass);
 
-    glm::vec3 cam_lookat_pos = (scene->camera->front * lookat_point_offset) + scene->camera->position;
+    glm::vec3 cam_lookat_pos = (camera->front * lookat_point_offset) + camera->position;
     for (int i = 0; i < scene->dir_lights.size(); i++)
     {
         glm::vec3 dir = -scene->dir_lights[i]->getDirection();
@@ -173,7 +307,7 @@ void Rasterizer::drawLighting(Scene* scene)
     drawScreen();
 }
 
-void Rasterizer::drawShadows(Scene* scene)
+void Rasterizer::drawShadows(Scene* scene, Camera* camera)
 {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_test2->color_attachments[0]->id, 0);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -195,8 +329,9 @@ void Rasterizer::drawShadows(Scene* scene)
     glBindTexture(GL_TEXTURE_2D_ARRAY, cascadeShadowMapTexArray->getID());
 
     scene->send_uniforms(shaderShadowPass);
+    camera->send_uniforms(shaderShadowPass);
 
-    glm::vec3 cam_lookat_pos = (scene->camera->front * lookat_point_offset) + scene->camera->position;
+    glm::vec3 cam_lookat_pos = (camera->front * lookat_point_offset) + camera->position;
     for (int i = 0; i < scene->dir_lights.size(); i++)
     {
         glm::vec3 dir = -scene->dir_lights[i]->getDirection();
@@ -254,9 +389,9 @@ void Rasterizer::drawShadows(Scene* scene)
     */
 }
 
-void Rasterizer::drawShadowMaps(Scene* scene)
+void Rasterizer::drawShadowMaps(Scene* scene, Camera* camera)
 {
-    glm::vec3 cam_lookat_pos = (scene->camera->front * lookat_point_offset) + scene->camera->position;
+    glm::vec3 cam_lookat_pos = (camera->front * lookat_point_offset) + camera->position;
 
     fbo_sdwmap->bind();
     shaderShadowDepth.use();
@@ -274,8 +409,10 @@ void Rasterizer::drawShadowMaps(Scene* scene)
 
         shaderShadowDepth.setMat4("lsm", LSM);
         for (auto m : scene->models) {
-            shaderShadowDepth.setMat4("model", m->model_mat);
-            m->draw(shaderShadowDepth);
+            if (m != nullptr) {
+                shaderShadowDepth.setMat4("model", m->get_transform()->get_matrix());
+                m->draw(shaderShadowDepth);
+            }
         }
     }
     fbo_sdwmap->unbind();
@@ -301,7 +438,7 @@ void Rasterizer::setShadowCascadeSize(int _size)
 void Rasterizer::initFBOs()
 {
     fbo = new FrameBuffer(SCR_WIDTH, SCR_HEIGHT);
-    fbo->attach(GL_COLOR_ATTACHMENT0, GL_RGBA16F, GL_RGBA, GL_FLOAT);
+    fbo->attach(GL_COLOR_ATTACHMENT0, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
     fbo->attach(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT);
     fbo->construct();
 

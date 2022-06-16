@@ -1,16 +1,22 @@
 #pragma once
 #include "GLCommon.h"
 
+#include "Curve.h"
+#include "Bezier.h"
+#include "ClosedCurve.h"
 #include "Model.h"
 #include "Camera.h"
 #include "EnvironmentLight.h"
 #include "PointLight.h"
 #include "DirectionalLight.h"
+#include "RenderObject.h"
 
 class Scene
 {
 public:
-	vector<Model*> models;
+	vector<RenderObject*> curves;
+	vector<RenderObject*> models;
+
 	vector<PointLight*> point_lights;
 	vector<DirectionalLight*> dir_lights;
 	EnvironmentLight* environment_light;
@@ -25,8 +31,12 @@ public:
 	int nmb_triangles = 0;
 
 	Scene();
-	Scene(vector<Model*> models, vector<Light*> lights, Camera* camera);
+	Scene(vector<RenderObject*> models, vector<Light*> lights, Camera* camera);
 	void load(string const& path, glm::vec3 translate = glm::vec3(0), glm::vec3 scale = glm::vec3(1));
+	void update_triangle_count();
+	void add_curve(Curve* curve);
+	void add_model(Model* r_obj);
+	void add_render_object(RenderObject* r_obj);
 	void set_camera(Camera* camera);
 	void add_light(PointLight* light);
 	void add_light(DirectionalLight* light);

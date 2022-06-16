@@ -72,12 +72,12 @@ __host__ __device__ Matrix4x4 Matrix4x4::operator-() const
     return Matrix4x4(0.f);
 }
 
-__host__ __device__ Matrix4x4 Matrix4x4::transpose(const Matrix4x4& m) {
+__host__ __device__ Matrix4x4 Matrix4x4::transpose() {
     return Matrix4x4(
-        m.m[0][0], m.m[1][0], m.m[2][0], m.m[3][0],
-        m.m[0][1], m.m[1][1], m.m[2][1], m.m[3][1],
-        m.m[0][2], m.m[1][2], m.m[2][2], m.m[3][2],
-        m.m[0][3], m.m[1][3], m.m[2][3], m.m[3][3]
+        m[0][0], m[1][0], m[2][0], m[3][0],
+        m[0][1], m[1][1], m[2][1], m[3][1],
+        m[0][2], m[1][2], m[2][2], m[3][2],
+        m[0][3], m[1][3], m[2][3], m[3][3]
     );
 }
 
@@ -167,7 +167,7 @@ __host__ __device__ Matrix4x4 Matrix4x4::inv() const
         m[3][0] * m[0][1] * m[1][3] -
         m[3][0] * m[0][3] * m[1][1];
 
-    inv.m[2][3] = -m[0][0] * m[1][1] * m[3][2] +
+    inv.m[3][2] = -m[0][0] * m[1][1] * m[3][2] +
         m[0][0] * m[1][2] * m[3][1] +
         m[1][0] * m[0][1] * m[3][2] -
         m[1][0] * m[0][2] * m[3][1] -
@@ -215,18 +215,15 @@ __host__ __device__ Matrix4x4 Matrix4x4::inv() const
 
     return inv;
 }
-__host__ void Matrix4x4::print()
+
+__host__ __device__ void Matrix4x4::print()
 {
-    printf("[ ");
-    for (int i = 0; i < 4; ++i) {
-        printf("  [ ");
-        for (int j = 0; j < 4; ++j) {
-            printf("%f", m[i][j]);
-            if (j != 3) printf(", ");
-        }
-        printf(" ]\n");
-    }
-    printf(" ] ");
+    printf("[%f,%f,%f,%f]\n[%f,%f,%f,%f]\n[%f,%f,%f,%f]\n[%f,%f,%f,%f]\n\n", 
+        m[0][0], m[0][1], m[0][2], m[0][3],
+        m[1][0], m[1][1], m[1][2], m[1][3], 
+        m[2][0], m[2][1], m[2][2], m[2][3], 
+        m[3][0], m[3][1], m[3][2], m[3][3]
+    );
 }
 
 __host__ __device__ Matrix4x4 Matrix4x4::zero(void)

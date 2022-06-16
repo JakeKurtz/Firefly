@@ -2,7 +2,7 @@
 #include "dMath.cuh"
 #include "BVH.h"
 
-#define TEST_CULL
+//#define TEST_CULL
 
 __device__ dTriangle::dTriangle(void)
 {
@@ -31,7 +31,8 @@ __device__ void dTriangle::init() {
 	face_normal = normalize(ortho);
 }
 
-__device__ bool dTriangle::intersect(const dRay& ray, float& u, float& v, float& t) const {
+__device__ bool dTriangle::intersect(const dRay& ray, float& u, float& v, float& t) const 
+{
 	float3 e1 = v1.position - v0.position;
 	float3 e2 = v2.position - v0.position;
 
@@ -77,19 +78,30 @@ __device__ bool dTriangle::intersect(const dRay& ray, float& u, float& v, float&
 
 	t = dot(e2, qvec) * inv_det;
 #endif
+
 	return true;
 }
 
 __device__ bool dTriangle::hit(const dRay& ray) const
 {
+	// apply inverse transformation matrix to ray
+	dRay ray_p = transform->inv_matrix * ray;
+
 	float u, v, t;
-	return intersect(ray, u, v, t);
+	return intersect(ray_p, u, v, t);
 }
 
 __device__ bool dTriangle::hit(const dRay& ray, float& tmin, Isect& isect) const
 {
+	// apply inverse transformation matrix to ray
+	dRay ray_p = transform->inv_matrix * ray;
+
+	//transform->inv_matrix.print();
+
+	//printf("o:\t(%f,%f,%f)\no':\t(%f,%f,%f)\n\n", ray.o.x, ray.o.y, ray.o.z, ray_p.o.x, ray_p.o.y, ray_p.o.z);
+
 	float u, v;
-	bool hit = intersect(ray, u, v, tmin);
+	bool hit = intersect(ray_p, u, v, tmin);
 
 	float3 normal = normalize(u * v1.normal + v * v2.normal + (1 - u - v) * v0.normal);
 	float3 tangent = normalize(u * v1.tangent + v * v2.tangent + (1 - u - v) * v0.tangent);
@@ -98,21 +110,25 @@ __device__ bool dTriangle::hit(const dRay& ray, float& tmin, Isect& isect) const
 
 	if (tmin < 0) return false;
 
-	isect.normal = normal;
-	isect.tangent = tangent;
-	isect.bitangent = bitangent;
+	// apply transformation to normal, tangent, bitangent, position.
+
+	isect.normal = normalize(float3_cast(transform->matrix * make_float4(normal, 0.f)));
+	isect.tangent = normalize(float3_cast(transform->matrix * make_float4(tangent, 0.f)));
+	isect.bitangent = normalize(float3_cast(transform->matrix * make_float4(bitangent, 0.f)));
 	isect.texcoord = texcoord;
-	isect.position = ray.o + (tmin * ray.d);
+	isect.position = transform->matrix * (ray_p.o + (tmin * ray_p.d));
 
 	return hit;
 };
 
 __device__ bool dTriangle::shadow_hit(const dRay& ray, float& tmin) const
 {
+	dRay ray_p = transform->inv_matrix * ray;
+
 	float3 e1 = v1.position - v0.position;
 	float3 e2 = v2.position - v0.position;
 
-	float3 pvec = cross(ray.d, e2);
+	float3 pvec = cross(ray_p.d, e2);
 	double det = dot(e1, pvec);
 
 	if (det > -K_EPSILON && det < K_EPSILON)
@@ -120,13 +136,13 @@ __device__ bool dTriangle::shadow_hit(const dRay& ray, float& tmin) const
 
 	double inv_det = 1.0 / det;
 
-	float3 tvec = ray.o - v0.position;
+	float3 tvec = ray_p.o - v0.position;
 	double u = dot(tvec, pvec) * inv_det;
 	if (u < 0.0 || u > 1.0)
 		return false;
 
 	float3 qvec = cross(tvec, e1);
-	double v = dot(ray.d, qvec) * inv_det;
+	double v = dot(ray_p.d, qvec) * inv_det;
 	if (v < 0.0 || u + v > 1.0)
 		return false;
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "GLCommon.h"
+#include "globals.h"
 
 #include "Camera.h"
 #include "CubeMap.h"
@@ -108,7 +109,7 @@ protected:
 
     FrameBuffer* fbo;
 
-    Texture* hdri_enviromentMap;
+    Texture* hdri_enviromentMap = nullptr;
     glm::vec3 color = glm::vec3(0.8);
 
     CubeMap* environmentMap;
@@ -124,6 +125,7 @@ protected:
     Shader brdfShader;
 
     int size;
+    int id;
 
     void init_buffers()
     {
@@ -312,6 +314,8 @@ public:
         basicBackgroundShader("../shaders/environment_map/basicBackground_vs.glsl", "../shaders/environment_map/basicBackground_fs.glsl"),
         atmosphereShader("../shaders/environment_map/atmo_vs.glsl", "../shaders/environment_map/atmo_fs.glsl")
     {
+        id = gen_id();
+
         size = 4;
         color = _color;
 
@@ -336,6 +340,8 @@ public:
         basicBackgroundShader("../shaders/environment_map/basicBackground_vs.glsl", "../shaders/environment_map/basicBackground_fs.glsl"),
         atmosphereShader("../shaders/environment_map/atmo_vs.glsl", "../shaders/environment_map/atmo_fs.glsl")
     {
+        id = gen_id();
+
         size = 512;
         hdri_enviromentMap = new Texture(path, GL_TEXTURE_2D, true);
 
@@ -413,21 +419,44 @@ public:
     }
 
     std::string get_texture_filepath() {
-        return hdri_enviromentMap->filepath;
+
+        if (hdri_enviromentMap == nullptr) return "NULL";
+        else return hdri_enviromentMap->filepath;
+    }
+
+    void set_texture_filepath(std::string filepath) {
+        // TODO: if filepath is invalid, then leave things as they were.
+        hdri_enviromentMap = new Texture(filepath, GL_TEXTURE_2D, true);
+
+        environmentMap = new CubeMap(512, true, false, "environment_map", GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
+        build_environmentMap_texture();
+
+        irradianceMap = new CubeMap(32, false, false, "irradiance_map", GL_CLAMP_TO_EDGE);
+        build_irradianceMap();
+
+        prefilterMap = new CubeMap(128, true, false, "pre_filter_map", GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
+        build_prefilterMap();
     }
 
     glm::vec3 get_color() {
         return color;
     }
 
+    void set_color(glm::vec3 color) {
+        (this)->color = color;
+        build_environmentMap_color();
+    }
+
     int get_tex_width() 
     {
-        return hdri_enviromentMap->width;
+        if (hdri_enviromentMap == nullptr) return 1;
+        else return hdri_enviromentMap->width;
     }
 
     int get_tex_height() 
     {
-        return hdri_enviromentMap->height;
+        if (hdri_enviromentMap == nullptr) return 1;
+        else return hdri_enviromentMap->height;
     }
 };
 

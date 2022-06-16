@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda_gl_interop.h>
+#include "FrameBuffer.h"
 
 class Interop
 {
@@ -26,15 +27,19 @@ private:
     int width;
     int height;
 
-    // GL buffers
-    GLuint* fbo_list;
-    GLuint* rbo_list;
-
     // CUDA resources
     cudaGraphicsResource_t* cgr_list;
     cudaArray_t* ca_list;
 
 public:
+
+    // GL buffers
+    GLuint fbo_main;
+    GLuint* fbo_list;
+    GLuint* rbo_list;
+
+    GLuint col_tex;
+
     Interop(const bool multi_gpu, const int fbo_count);
     ~Interop();
 

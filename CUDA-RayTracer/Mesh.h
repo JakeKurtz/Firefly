@@ -28,6 +28,7 @@ public:
     std::vector<unsigned int> get_indices();
     Material* get_material();
     std::string get_name();
+    int get_id();
     int get_nmb_of_triangles();
 
 private:
@@ -41,7 +42,7 @@ private:
     // render data 
     unsigned int VBO, EBO;
     int nmb_triangles = 0;
-
+    int id;
     // initializes all the buffer objects/arrays
     void setup();
 };

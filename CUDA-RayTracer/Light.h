@@ -16,7 +16,7 @@ protected:
 public:
 	Light();
 
-	std::string getName();
+	std::string get_name();
 	int getId();
 	glm::vec3 getColor();
 	float getIntensity();

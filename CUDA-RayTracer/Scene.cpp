@@ -8,7 +8,7 @@ Scene::Scene()
     //environmentLight = new EnvironmentLight(glm::vec3(0.8f, 0.2f, 0.2f));
 }
 
-Scene::Scene(vector<Model*> _models, vector<Light*> _lights, Camera* _camera)
+Scene::Scene(vector<RenderObject*> _models, vector<Light*> _lights, Camera* _camera)
 {
     models = _models;
     //lights = _lights;
@@ -22,6 +22,12 @@ void Scene::load(string const& path, glm::vec3 translate, glm::vec3 scale)
     // read file via ASSIMP
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path, aiProcess_RemoveComponent | aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+
+    std::string base_filename = path.substr(path.find_last_of("/\\") + 1);
+
+    // remove extension from filename
+    std::string::size_type const p(base_filename.find_last_of('.'));
+    std::string file_name = base_filename.substr(0, p);
 
     // check for errors
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
@@ -42,9 +48,10 @@ void Scene::load(string const& path, glm::vec3 translate, glm::vec3 scale)
         load_model(meshes, model_mat, scene->mRootNode, scene);
 
         Model* model = new Model(meshes, mat4_cast(model_mat));
+        model->set_name(file_name);
         model->set_directory(path);
-        model->scale = scale;
-        model->position = translate;
+        model->get_transform()->scale(scale);
+        model->get_transform()->translate(translate);
 
         models.push_back(model);
     }
@@ -60,6 +67,45 @@ void Scene::load(string const& path, glm::vec3 translate, glm::vec3 scale)
         for (unsigned int i = 0; i < scene->mNumCameras; i++) {
             aiCamera* camera = scene->mCameras[i];
             load_camera(camera, scene);
+        }
+    }
+}
+
+void Scene::add_curve(Curve* curve)
+{
+    curves.push_back(curve);
+}
+
+void Scene::add_model(Model* r_obj)
+{
+    models.push_back(r_obj);
+
+    for (auto mesh : r_obj->get_meshes()) {
+        auto mat = mesh->get_material();
+        materials_loaded.insert(std::pair<string, Material*>(mat->name, mat));
+    }
+}
+
+void Scene::add_render_object(RenderObject* r_obj)
+{
+    if (r_obj->type() == TYPE_CURVE) {
+        curves.push_back(r_obj);
+    }
+
+    if (r_obj->type() == TYPE_TRIANGLE_MESH) {
+        Model* model = dynamic_cast<Model*>(r_obj);
+        add_model(model);
+    }
+}
+
+void Scene::update_triangle_count()
+{
+    nmb_triangles = 0;
+
+    for (auto r_obj : models) {
+        Model* model = dynamic_cast<Model*>(r_obj);
+        for (auto mesh : model->get_meshes()) {
+            nmb_triangles += mesh->get_nmb_of_triangles();
         }
     }
 }
@@ -259,8 +305,6 @@ Camera* Scene::load_camera(aiCamera* camera, const aiScene* scene)
 
 void Scene::send_uniforms(Shader& shader)
 {
-    camera->sendUniforms(shader);
-
     for (unsigned int i = 0; i < point_lights.size(); i++)
     {
         shader.setVec3("pnt_lights[" + std::to_string(i) + "].position", point_lights[i]->getPosition());
@@ -292,6 +336,7 @@ void Scene::bind_environment_textures(Shader& shader)
 
 int Scene::get_nmb_of_triangles()
 {
+    update_triangle_count(); // NOTE: this is wasteful computation. Maybe create flags for when to update this stuff?
     return nmb_triangles;
 }
 

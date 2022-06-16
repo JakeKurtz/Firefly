@@ -13,12 +13,25 @@ class PathTracer
 public:
     PathTracer(int w, int h);
     void draw(dScene* s);
+    void render_image(dScene* s);
     void draw_debug(dScene* s);
 
+    void reset_image();
     void clear_buffer();
+
+    void set_tile_size(int size);
+
+    Interop* interop;
+
+    uint32_t* nmb_completed_pixels;
+
+    int max_samples = 1;
+    int tile_size = 256;
+    int tile_id = 0;
+
 private:
     const int BLOCK_SIZE = 64;
-    const uint32_t  MAX_PATH_LENGTH = 3;
+    const uint32_t  MAX_PATH_LENGTH = 5;
 
     int width;
     int height;
@@ -33,11 +46,12 @@ private:
     float4* accumulatebuffer;
     int* n_samples;
 
+    bool* completed_pixels = 0;
+
     dScene* scene;
     dFilm* d_film = nullptr;
     dCamera* d_camera = nullptr;
 
-    Interop* interop;
     cudaStream_t stream;
     cudaEvent_t  event;
 
@@ -46,6 +60,18 @@ private:
     bool paths_initialized = false;
     bool film_initialized = false;
     bool initialized = false;
+
+    bool image_complete = false;
+
+    int nmb_tiles = 0;
+
+    int nmb_tile_cols = 0;
+    int nmb_tile_rows = 0;
+
+    int tile_x = 0;
+    int tile_y = 0;
+
+    int samples = 0;
 
     void init_interop();
     void init_queues();

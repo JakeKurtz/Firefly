@@ -4,6 +4,7 @@
 #include "dVertex.cuh"
 #include "dRay.cuh"
 #include "dMaterial.cuh"
+#include "dTransform.cuh"
 #include "Isect.cuh"
 #include "BVH.h"
 
@@ -21,6 +22,7 @@ public:
 	float inv_area;
 	int material_index = 0;
 	dMaterial* material;
+	dTransform* transform;
 	dVertex v0, v1, v2;
 	float3 face_normal;
 };

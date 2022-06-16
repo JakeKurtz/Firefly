@@ -10,6 +10,7 @@ struct dCamera
 {
     float3 position = make_float3(0, 0, 0);
     Matrix4x4 inv_view_proj_mat;
+    Matrix4x4 inv_view_mat;
 
     float lens_radius = 1.f;	// lens radius
     float d = 100.f;			// view plane distance
